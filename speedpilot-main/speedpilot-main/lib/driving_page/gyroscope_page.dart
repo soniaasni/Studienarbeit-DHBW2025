@@ -76,7 +76,7 @@ class GyroscopePage extends StatelessWidget {
                   DeviceOrientation.portraitUp,
                   DeviceOrientation.portraitDown
                 ]);
-                Navigator.push(
+                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (context) => MapScrolling()),
                 );
@@ -90,7 +90,18 @@ class GyroscopePage extends StatelessWidget {
             child: Container(
               height: 200,
               width: 200,
-              child: getGyroscope(), // Displays pitch, roll, and yaw
+              
+              child: FutureBuilder<bool>(
+                future: SharedPreferences.getInstance()
+                    .then((p) => p.getBool('gyro') ?? false),
+                builder: (context, snapshot) {
+                  if (snapshot.data == true) {
+                    return getGyroscope(); // Neigungssteuerung AKTIV
+                  } else {
+                    return const SizedBox(); // Gyro AUS -> Joystick übernimmt
+                  }
+                },
+              ),
             ),
           ),
         ],
