@@ -17,3 +17,5 @@
 *.glg
 *.glo
 *.gls
+*.glsdefs
+*.ist
