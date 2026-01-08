@@ -1,0 +1,86 @@
+\documentclass[a4paper,12pt]{article}
+
+% -----------------------------------------
+% Pakete und Einstellungen
+% -----------------------------------------
+\usepackage[a4paper, left=2.5cm, right=2.5cm, top=1cm, bottom=2.5cm, includehead]{geometry} 
+\usepackage[ngerman]{babel}
+\usepackage{fontspec}
+\setmainfont{Arial}
+\usepackage{csquotes}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{listings}
+\usepackage{color}
+\usepackage[
+    backend=biber,
+    style=numeric,
+    sorting=nyt
+]{biblatex}
+\usepackage{setspace}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage[acronym,nonumberlist]{glossaries}
+\makeglossaries
+
+
+\addbibresource{literatur/T2000.bib}
+
+\definecolor{lightgray}{rgb}{0.95,0.95,0.95}
+\lstset{
+    backgroundcolor=\color{lightgray},
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single
+}
+\setstretch{1,5}                % Zeilenabstand: 1.5 (Standard: 1.2)
+\begin{document}
+\pagenumbering{gobble} % unterdrückt Seitenzahlen komplett
+
+\include{Titelblatt}
+\thispagestyle{empty}
+
+\include{Erklaerung}
+\thispagestyle{empty}
+
+\include{Genderhinweis}
+\thispagestyle{empty}
+
+\cleardoublepage
+\pagenumbering{Roman}
+\tableofcontents
+\newpage
+
+\input{Abkuerzungen}
+\addcontentsline{toc}{section}{Abkürzungsverzeichnis}
+\printglossary[type=\acronymtype,title=Abkürzungsverzeichnis]
+\newpage
+
+\addcontentsline{toc}{section}{Abbildungsverzeichnis}
+\listoffigures
+\newpage
+
+\addcontentsline{toc}{section}{Tabellenverzeichnis}
+\listoftables
+\newpage
+
+
+% usw.
+\pagenumbering{arabic}
+\input{Einleitung} \newpage
+\input{Grundlagen}\newpage
+\input{Ist-Zustand und wissenschaftliche Bewertung der Sensorik}\newpage
+\input{Konzept und Anforderungsdefinition}\newpage
+\input{Implementierung}\newpage
+\input{Evaluation und Validierung}\newpage
+\input{Kritische Reflexion}\newpage
+\input{Fazit und Ausblick}\newpage
+
+\pagenumbering{Roman}
+\setcounter{page}{5}
+\addcontentsline{toc}{section}{Literaturverzeichnis}
+\printbibliography
+
+\appendix
+\end{document}
