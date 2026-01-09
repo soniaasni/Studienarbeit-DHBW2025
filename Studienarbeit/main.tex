@@ -26,8 +26,11 @@
 \usepackage{caption}
 \usepackage[acronym,nonumberlist]{glossaries}
 \makeglossaries
-
-
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage[table]{xcolor}
+\usepackage{array}
+\usepackage{adjustbox}  % max width=\textwidth
 \usepackage[backend=biber]{biblatex}
 \addbibresource{literatur/T2000.bib}
 
@@ -75,6 +78,7 @@
 % usw.
 \pagenumbering{arabic}
 \input{Einleitung} \newpage
+\input{Methodik}\newpage
 \input{Grundlagen}\newpage
 \input{Ist-Zustand und wissenschaftliche Bewertung der Sensorik}\newpage
 \input{Konzept und Anforderungsdefinition}\newpage

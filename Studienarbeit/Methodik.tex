@@ -1,0 +1,60 @@
+\section{Methodiken}
+In diesem Kapitel werden Methodiken zur Herleitung oder Abwägung einer Lösung erklärt. Dies ist förderlich, um im Verlauf einen möglichst effizienten Lösungsweg zu schaffen.
+
+\subsection{Nutzwertanalyse}
+
+\definecolor{nwGray}{RGB}{191,191,191}
+\definecolor{nwGreen}{RGB}{99,190,123}
+\definecolor{nwRed}{RGB}{248,105,107}
+\definecolor{nwYellow}{RGB}{255,235,132}
+
+\begin{table}[htbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.25}
+
+\begin{adjustbox}{max width=500pt}
+\begin{tabular}{|l|c|c|c|c|c|c|c|c|}
+\hline
+ & \multirow{2}{*}{\rotatebox{90}{Wertebereich}} &
+ \multirow{2}{*}{\rotatebox{90}{Gewichtung}} &
+ \multicolumn{2}{c|}{Option 1} &
+ \multicolumn{2}{c|}{Option 2} &
+ \multicolumn{2}{c|}{Option 3} \\
+\cline{4-9}
+ &  &  &
+ \rotatebox{90}{Bewertung} & \cellcolor{nwGray}\rotatebox{90}{Nutzwert} &
+ \rotatebox{90}{Bewertung} & \cellcolor{nwGray}\rotatebox{90}{Nutzwert} &
+ \rotatebox{90}{Bewertung} & \cellcolor{nwGray}\rotatebox{90}{Nutzwert} \\
+\hline
+
+Kriterium 1 & 0-5 & 10 & 1 & \cellcolor{nwRed}{10}  & 3 & \cellcolor{nwGreen}{30} & 3 & \cellcolor{nwGreen}{30} \\
+\hline
+Kriterium 2 & 0-5 & 30 & 2 & \cellcolor{nwRed}{60}  & 5 & \cellcolor{nwGreen}{150} & 2 & \cellcolor{nwRed}{60} \\
+\hline
+Kriterium 3 & 0-5 & 25 & 4 & \cellcolor{nwGreen}{100} & 1 & \cellcolor{nwRed}{25}  & 4 & \cellcolor{nwGreen}{100} \\
+\hline
+Kriterium 4 & 0-5 & 25 & 3 & \cellcolor{nwGreen}{75}  & 2 & \cellcolor{nwRed}{50}  & 3 & \cellcolor{nwGreen}{75} \\
+\hline
+Kriterium 5 & 0-5 & 15 & 3 & \cellcolor{nwGreen}{45}  & 2 & \cellcolor{nwRed}{30}  & 2 & \cellcolor{nwRed}{30} \\
+\hline
+
+\multicolumn{4}{|c|}{Nutzwertsumme} &
+\cellcolor{nwYellow}{290} &
+\multicolumn{1}{c|}{} & \cellcolor{nwRed}{285} &
+\multicolumn{1}{c|}{} & \cellcolor{nwGreen}{295} \\
+\hline
+
+\multicolumn{4}{|c|}{Rangplatz} &
+\cellcolor{nwYellow}{2} &
+\multicolumn{1}{c|}{} & \cellcolor{nwRed}{3} &
+\multicolumn{1}{c|}{} & \cellcolor{nwGreen}{1} \\
+\hline
+\end{tabular}
+\end{adjustbox}
+
+\caption{Beispiel Nutzwertanalyse}
+\label{tab:nutzwertanalyse}
+\end{table}
+Eine Nutzwertanalyse (siehe Tabelle 1 [1]) ist eine Möglichkeit, aus vielen Optionen, die bestimmte Kriterien erfüllen müssen, die beste Option zu finden. Sie ist in verschiedene Spalten aufgeteilt. Die linke Spalte enthält die Kriterien, welche erfüllt sein müssen, damit das Endergebnis gut ist. Die folgende Spalte enthält den Wertebereich der verteilt werden kann. Spalte drei könnte optional eine Gewichtung der Kriterien festlegen, dadurch können genauere Ergebnisse erzielt werden. Diese Nutzwertanalyse wäre in dem Fall eine gewichtete Nutzwertanalyse, ohne Gewichtung wäre es nur eine einfache Nutzwertanalyse. Anschließend an die ersten Spalten kommen nun die Optionsspalten. Diese werden Spalte für Spalte durchgearbeitet und Punkte vergeben. Falls hinter Punkten eine Gewisse Bedeutung liegt, ist die Erstellung einer Legende notwendig. Für das Ergebnis werden nun die Eintragungen mit der Gewichtung der Zeile multipliziert und dann die Optionsspalte addiert. Anhand des Ergebnisses kann dann auswertet werden, welche Option am besten die Kriterien erfüllt. Die farbliche Abhebungen wird genutzt, dass schneller erkenntlich ist welche Option ein Kriterium am besten erfüllt.
