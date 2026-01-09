@@ -18,6 +18,9 @@
     style=numeric,
     sorting=nyt
 ]{biblatex}
+\makeatletter
+\let\blx@warn@emptybib\relax
+\makeatother
 \usepackage{setspace}
 \usepackage{graphicx}
 \usepackage{caption}
@@ -25,7 +28,9 @@
 \makeglossaries
 
 
+\usepackage[backend=biber]{biblatex}
 \addbibresource{literatur/T2000.bib}
+
 
 \definecolor{lightgray}{rgb}{0.95,0.95,0.95}
 \lstset{
@@ -54,6 +59,7 @@
 
 \input{Abkuerzungen}
 \addcontentsline{toc}{section}{Abkürzungsverzeichnis}
+\glsaddall[types={\acronymtype}]
 \printglossary[type=\acronymtype,title=Abkürzungsverzeichnis]
 \newpage
 
@@ -77,10 +83,17 @@
 \input{Kritische Reflexion}\newpage
 \input{Fazit und Ausblick}\newpage
 
+\cleardoublepage
 \pagenumbering{Roman}
 \setcounter{page}{5}
+
+\cite{dummyhidden}
 \addcontentsline{toc}{section}{Literaturverzeichnis}
-\printbibliography
+\printbibliography[title={Literaturverzeichnis}]
+
+\par\noindent\textit{Es wurden keine Literaturverweise im Dokument gesetzt.}
+
+
 
 \appendix
 \end{document}
