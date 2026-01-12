@@ -23,6 +23,10 @@
 \makeatother
 \usepackage{setspace}
 \usepackage{graphicx}
+\graphicspath{
+  {images/}
+  {tables/}
+}
 \usepackage{caption}
 \usepackage[acronym,nonumberlist]{glossaries}
 \makeglossaries
@@ -31,7 +35,6 @@
 \usepackage[table]{xcolor}
 \usepackage{array}
 \usepackage{adjustbox}  % max width=\textwidth
-\usepackage[backend=biber]{biblatex}
 \addbibresource{literatur/T2000.bib}
 
 
@@ -42,7 +45,7 @@
     breaklines=true,
     frame=single
 }
-\setstretch{1,5}                % Zeilenabstand: 1.5 (Standard: 1.2)
+\setstretch{1.5}                % Zeilenabstand: 1.5 (Standard: 1.2)
 \begin{document}
 \pagenumbering{gobble} % unterdrückt Seitenzahlen komplett
 
