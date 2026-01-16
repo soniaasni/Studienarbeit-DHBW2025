@@ -1,4 +1,6 @@
 import json
+from pathlib import Path
+
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -10,6 +12,10 @@ POINT_SIZE = 10
 CENTER_POINT_SIZE = 50
 TITLE = "LIDAR Datenvisualisierung"
 PLOT_LABEL = 'Mittelpunkt'
+
+BASE_DIR = Path(__file__).resolve().parent
+LIDAR_DATA_PATH = BASE_DIR / "assets" / "lidar_data" / "lidar_scan_5.json"
+OUTPUT_IMAGE_PATH = BASE_DIR / "assets" / "images" / "lidar.jpg"
 
 
 def load_lidar_data(file_path):
@@ -70,12 +76,13 @@ def plot_polar_data(angles, distances):
     ax.scatter(0, 0, c=RED, s=CENTER_POINT_SIZE, label=PLOT_LABEL)
     ax.set_title(TITLE)
     ax.legend(loc='upper right')
-    plt.savefig("/Users/tobias/Documents/GitHub/speedpilot/assets/images/lidar.jpg")
+    OUTPUT_IMAGE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    plt.savefig(OUTPUT_IMAGE_PATH)
 
 
 def main():
     # LIDAR-Daten laden
-    lidar_data = load_lidar_data("/Users/tobias/Documents/GitHub/speedpilot/assets/lidar_data/lidar_scan_5.json")
+    lidar_data = load_lidar_data(LIDAR_DATA_PATH)
     
     if lidar_data is None:
         return  
