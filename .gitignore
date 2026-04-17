@@ -1,4 +1,4 @@
-# LaTeX/Studienarbeit
+# LaTeX
 *.aux
 *.bbl
 *.bcf
@@ -54,6 +54,3 @@ build/
 .buildlog/
 .history
 .svn/
-
-# Docker
-.dockerignore
