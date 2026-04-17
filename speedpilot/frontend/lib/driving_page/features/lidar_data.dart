@@ -28,7 +28,7 @@ class _LidarScreenState extends State<LidarScreen> {
     try {
       // Load JSON string from the asset
       String jsonStr = await rootBundle
-          .loadString('assets/lidar_data/occupancy_grid_example.json');
+          .loadString('lidar/assets/lidar_data/occupancy_grid_example.json');
 
       // Decode JSON
       Map<String, dynamic> jsonMap = json.decode(jsonStr);

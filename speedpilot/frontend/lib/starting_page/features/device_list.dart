@@ -251,7 +251,7 @@ class _DeviceOptions extends State<DeviceOptions> {
                         height: 100,
                         width: 100,
                         margin: const EdgeInsets.only(right: 0),
-                        child: Image.asset('assets/images/PfuschMobil.png'),
+                        child: Image.asset('lidar/assets/images/PfuschMobil.png'),
                       ),
                       // Delete button
                       IconButton(
