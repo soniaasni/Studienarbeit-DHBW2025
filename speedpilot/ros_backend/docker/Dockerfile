@@ -15,6 +15,7 @@ RUN apt-get update -q && \
     apt-get install -y --no-install-recommends \
     wget curl git build-essential python3-pip python3-rosdep \
     python3-argcomplete python3-colcon-common-extensions python3-networkx python3-vcstool && \
+    python3 -m pip install --no-cache-dir websocket-server && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # ROS Setup
@@ -23,6 +24,12 @@ RUN rosdep update && \
 
 # Kopiere Workspace Source
 COPY ros2_ws/src/ /root/ros2_ws/src/
+WORKDIR /root/ros2_ws
+RUN source /opt/ros/jazzy/setup.bash && \
+    rosdep update && \
+    rosdep install --from-path src --ignore-src --rosdistro jazzy -y --skip-keys "actionlib catkin message_generation rviz rosparam_shortcuts" && \
+    colcon build --packages-select ros2_bridge car_controller lidar_obstacle_avoidance ultrasonic_sensor custom_msgs && \
+    rm -rf build log
 
 # Stage 2: Runtime (minimal)
 FROM ros:jazzy
@@ -40,9 +47,11 @@ RUN apt-get update -q && \
     wget curl git python3-pip python3-rosdep \
     python3-argcomplete python3-colcon-common-extensions python3-networkx python3-vcstool \
     libserial-dev && \
+    python3 -m pip install --no-cache-dir websocket-server && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Kopiere Source vom Builder
+# Kopiere gebaute Artefakte und Source vom Builder
+COPY --from=builder /root/ros2_ws/install /root/ros2_ws/install
 COPY --from=builder /root/ros2_ws/src /root/ros2_ws/src
 
 # Setup-Skripte

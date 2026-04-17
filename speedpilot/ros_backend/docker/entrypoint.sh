@@ -28,9 +28,9 @@ source /opt/ros/$ROS_DISTRO/setup.bash
 if [ ! -d "$ROS_WS/install" ]; then
     echo "Building ROS2 workspace..."
     cd $ROS_WS
-    rosdep update || echo "Warning: rosdep update failed"
-    rosdep install --from-path src --ignore-src --rosdistro $ROS_DISTRO -y --skip-keys "actionlib catkin message_generation rviz rosparam_shortcuts" || echo "Warning: Some dependencies could not be resolved"
-    colcon build --packages-select ros2_bridge car_controller lidar_obstacle_avoidance ultrasonic_sensor custom_msgs || echo "Warning: colcon build had issues"
+    rosdep update
+    rosdep install --from-path src --ignore-src --rosdistro $ROS_DISTRO -y --skip-keys "actionlib catkin message_generation rviz rosparam_shortcuts"
+    colcon build --packages-select ros2_bridge car_controller lidar_obstacle_avoidance ultrasonic_sensor custom_msgs
     rm -rf build log
 fi
 
