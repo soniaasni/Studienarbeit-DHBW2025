@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Launch both ros_bridge and car_controller nodes."""
+"""Launch ros_bridge, car_controller and lidar_obstacle_avoidance nodes."""
 
 from launch import LaunchDescription, LaunchService
 
@@ -14,7 +14,8 @@ def generate_launch_description():
     a list of Node definitions. The nodes included are:
         - A bridge node from the 'ros2_bridge' package with the executable 'bridge_node'.
         - A car controller node from the 'car_controller' package with the executable 'controller_node'.
-    Both nodes are configured to output their logs to the screen.
+        - A lidar obstacle avoidance node from the 'lidar_obstacle_avoidance' package with the executable 'obstacle_avoidance_node'.
+    All nodes are configured to output their logs to the screen.
     Returns:
         LaunchDescription: An object containing the launch information for the defined nodes.
     """
@@ -29,6 +30,12 @@ def generate_launch_description():
             package='car_controller',
             executable='controller_node',
             name='car_controller',
+            output='screen'
+        ),
+        Node(
+            package='lidar_obstacle_avoidance',
+            executable='obstacle_avoidance_node',
+            name='obstacle_avoidance',
             output='screen'
         )
     ])
