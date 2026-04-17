@@ -26,5 +26,5 @@ services:
       - /sys/class/gpio:/sys/class/gpio
       - /dev/gpiomem:/dev/gpiomem
       - /dev/mem:/dev/mem
-    mem_limit: 4G
+    mem_limit: 2G
     command: ["tail", "-f", "/dev/null"]

@@ -42,25 +42,12 @@ fi
 export ROS_DOMAIN_ID=$(cat "$ROS_DOMAIN_ID_FILE")
 
 # Source ROS setup file
-# This sets up the ROS 2 environment for the current shell session
-source /opt/ros/$ROS_DISTRO/setup.bash
+source /opt/ros/jazzy/setup.bash
 
 # Source the local workspace setup
 source $ROS_WS/install/setup.bash
 
-# Source the .bashrc file to ensure all environment variables are up to date
-source /root/.bashrc
-
-# Change to the ROS 2 workspace directory
-cd $ROS_WS
-
-# Build the ROS 2 workspace using colcon
-colcon build
-
-# Change back to the root directory
-cd
-
-# Source .bashrc again to ensure any changes made during the build are applied
+# Source .bashrc
 source /root/.bashrc
 
 # Any command you run after this script runs in the environment set up by the script.
