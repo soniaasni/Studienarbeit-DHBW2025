@@ -15,65 +15,12 @@ Ein vollständiges autonomes Fahrzeugsystem bestehend aus einer Flutter-Mobilit�
 - **Sensoren**: LIDAR-Integration für Kartenerstellung & Hindernisvermeidung
 - **Deployment**: Docker-containerisiert für einfache Skalierung
 
----
-
-## Projektstruktur
-
-```
-Studienarbeit-DHBW2025/
-│
-├── speedpilot-main/
-│   ├── flutter/                      # Flutter Build-Konfigurationen
-│   │   ├── distributions/            # OS-spezifische Builds
-│   │   │   ├── android/
-│   │   │   ├── ios/
-│   │   │   ├── macos/
-│   │   │   ├── windows/
-│   │   │   ├── linux/
-│   │   │   └── web/
-│   │   └── .dart_tool/, .metadata, .fvmrc
-│   ├── lib/                          # Dart-Quellcode (plattformunabhängig)
-│   │   ├── main.dart                 # Einstiegspunkt
-│   │   ├── driving_page/             # Fahrzeugsteuerung
-│   │   ├── map_page/                 # Kartendarstellung
-│   │   ├── settings_page/            # Einstellungen
-│   │   ├── starting_page/            # Verbindungssetup
-│   │   ├── models/                   # Datenmodelle
-│   │   └── services/                 # WebSocket, APIs
-│   ├── assets/                       # Bilder & LIDAR-Datensätze
-│   └── pubspec.yaml                  # Flutter Dependencies
-│
-├── speedpilot_ros_backend-main/
-│   ├── ros2_ws/
-│   │   └── src/
-│   │       ├── car_controller/       # Fahrzeugsteuerung
-│   │       ├── ros2_bridge/          # WebSocket Bridge
-│   │       ├── custom_msgs/          # Nachrichtendefinitionen
-│   │       └── ultrasonic_sensor/    # Sensorintegration
-│   ├── docker/
-│   │   ├── Dockerfile                # Container-Image
-│   │   └── docker-compose.yml        # Orchestration
-│   └── workspace.sh                  # Setup-Skript
-│
-├── Studienarbeit/
-│   ├── main.tex                      # LaTeX Hauptdatei
-│   ├── Grundlagen.tex
-│   ├── Konzept und Anforderungsdefinition.tex
-│   ├── Implementierung.tex
-│   ├── Evaluation und Validierung.tex
-│   └── literatur/                    # Quellen
-│
-└── README.md                         # (Diese Datei)
-```
-
----
-
 ## Schnelleinstieg
 
 ### 1. Frontend - Flutter App
 
 ```bash
-cd speedpilot-main
+cd speedpilot\frontend
 
 # Abhängigkeiten installieren
 flutter pub get
@@ -96,7 +43,7 @@ flutter run           # Auf angeschlossenem Gerät ausführen
 ### 2. Backend - ROS 2 + Docker
 
 ```bash
-cd speedpilot_ros_backend-main
+cd speedpilot\ros_backend
 
 # Docker Image bauen & Container starten
 docker compose up
