@@ -1,0 +1,22 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from custom_msgs/msg/VehicleCommand.msg
+// generated code does not contain a copyright notice
+
+
+module custom_msgs {
+  module msg {
+    struct VehicleCommand {
+      @verbatim (language="comment", text=
+        "The command to be executed")
+      string command;
+
+      @verbatim (language="comment", text=
+        "magnitude of speed (positive: forward, negative: backward)")
+      float speed;
+
+      @verbatim (language="comment", text=
+        "steering angle (positive: right, negative: left)")
+      float angle;
+    };
+  };
+};

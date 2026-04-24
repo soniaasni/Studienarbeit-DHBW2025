@@ -3,9 +3,9 @@
 <package format="3">
   <name>ultrasonic_sensor</name>
   <version>0.0.0</version>
-  <description>TODO: Package description</description>
-  <maintainer email="max@domitrovic.com">root</maintainer>
-  <license>TODO: License declaration</license>
+  <description>HC-SR04 Ultraschallsensor-Node. Misst Abstände über GPIO Trigger/Echo und publiziert Float32-Werte auf /ultrasonic/distance (alle 200 ms).</description>
+  <maintainer email="sinacisonia@gmail.com">speedpilot</maintainer>
+  <license>MIT</license>
 
   <depend>rclpy</depend>
   <depend>std_msgs</depend>

@@ -17,8 +17,6 @@ setup(
     packages=[package_name],
     install_requires=['websocket-server'],
     zip_safe=True,
-    maintainer='max',
-    maintainer_email='max@domitrovic.com',
     description='ROS2 WebSocket Bridge für Flutter-App',
     license='Apache License 2.0',
     tests_require=['pytest'],

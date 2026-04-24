@@ -12,17 +12,12 @@ PARENT_PATH=$(dirname "$SCRIPT_PATH")
 build_docker_image()
 {
     # Set a log message for the build process
-    LOG="Building Docker image manipulation:latest ..."
+    LOG="Building Docker image speedpilot:latest ..."
 
     # Print the log message using our debug function
     print_debug
 
-    # Build the Docker image
-    # -f $SCRIPT_PATH/Dockerfile: Specify the path to the Dockerfile in the docker directory
-    # -t manipulation:latest: Tag the image as manipulation:latest
-    # $PARENT_PATH: Use the parent directory as the build context, allowing access to all package files
-    # --no-cache: Build the image without using the cache, ensuring fresh dependencies
-    sudo docker image build -f $SCRIPT_PATH/Dockerfile -t manipulation:latest $PARENT_PATH
+    sudo docker image build -f $SCRIPT_PATH/Dockerfile -t speedpilot:latest $PARENT_PATH
 }
 
 # Function to create a shared folder
@@ -30,16 +25,16 @@ build_docker_image()
 create_shared_folder()
 {
     # Check if the directory doesn't exist
-    if [ ! -d "$HOME/automaticaddison/shared/ros2" ]; then
+    if [ ! -d "$HOME/speedpilot/shared/ros2" ]; then
         # Set a log message for folder creation
-        LOG="Creating $HOME/automaticaddison/shared/ros2 ..."
+        LOG="Creating $HOME/speedpilot/shared/ros2 ..."
 
         # Print the log message
         print_debug
 
         # Create the directory and its parent directories if they don't exist
         # -p flag creates parent directories as needed
-        mkdir -p $HOME/automaticaddison/shared/ros2
+        mkdir -p $HOME/speedpilot/shared/ros2
     fi
 }
 

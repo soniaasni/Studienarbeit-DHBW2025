@@ -1,7 +1,7 @@
 
 services:
-  manipulation: &manipulation
-    build: 
+  speedpilot: &speedpilot
+    build:
       context: ../
       dockerfile: docker/Dockerfile
     container_name: speedpilot
@@ -20,7 +20,7 @@ services:
       - XAUTHORITY=/tmp/.Xauthority
     volumes:
       - ${PWD}/../ros2_ws:/root/ros2_ws
-      - $HOME/automaticaddison/shared/ros2:/root/shared/ros2
+      - $HOME/speedpilot/shared/ros2:/root/shared/ros2
       - $HOME/.Xauthority:/tmp/.Xauthority
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - /dev:/dev

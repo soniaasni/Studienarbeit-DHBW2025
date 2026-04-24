@@ -3,8 +3,6 @@
 # Stage 1: Builder
 FROM ros:jazzy AS builder
 
-LABEL maintainer="MaxDomitrovic<max@domitrovic.com>"
-
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
 ENV DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-c"]
@@ -15,7 +13,7 @@ RUN apt-get update -q && \
     apt-get install -y --no-install-recommends \
     wget curl git build-essential python3-pip python3-rosdep \
     python3-argcomplete python3-colcon-common-extensions python3-networkx python3-vcstool && \
-    python3 -m pip install --no-cache-dir websocket-server && \
+    python3 -m pip install --no-cache-dir websocket-server protobuf && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # ROS Setup
@@ -34,8 +32,6 @@ RUN source /opt/ros/jazzy/setup.bash && \
 # Stage 2: Runtime (minimal)
 FROM ros:jazzy
 
-LABEL maintainer="MaxDomitrovic<max@domitrovic.com>"
-
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
 ENV DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-c"]
@@ -47,7 +43,7 @@ RUN apt-get update -q && \
     wget curl git python3-pip python3-rosdep \
     python3-argcomplete python3-colcon-common-extensions python3-networkx python3-vcstool \
     libserial-dev && \
-    python3 -m pip install --no-cache-dir websocket-server && \
+    python3 -m pip install --no-cache-dir websocket-server protobuf && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Kopiere gebaute Artefakte und Source vom Builder
