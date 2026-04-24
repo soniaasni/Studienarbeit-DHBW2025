@@ -43,37 +43,55 @@ flutter run           # Auf angeschlossenem Gerät ausführen
 ### 2. Backend - ROS 2 + Docker
 
 ```bash
-cd speedpilot\ros_backend
+cd speedpilot/ros_backend
 
-# Docker Image bauen & Container starten
-docker compose build
+# Docker Image bauen
+cd docker
+bash build.sh
 
-# Im Container arbeiten
-docker run -it ImageID bash
+# Container starten (docker-compose)
+docker compose up
 
-# ROS 2 System starten
-bash 
-source /opt/ros/jazzy/setup.bash
-source /root/ros2_ws/install/setup.bash
-//ros2 launch speedpilot_backend bringup.launch.py
-
-------------
-# Patch 
-pip install protobuf
-colcon build
-source /opt/ros/jazzy/setup.bash && source install/setup.bash && python3 src/car_system_launch.py
-
+# Oder manuell starten
+docker run -it --privileged --network host \
+  -v $(pwd)/../ros2_ws:/root/ros2_ws \
+  speedpilot:latest bash
 ```
 
-**Abhängigkeiten:** ROS 2 Jazzy, Python 3.12, Docker, CMake 3.28+
+**Abhängigkeiten:** Docker 24+, Docker Compose v2
 
-### 3. Kommunikation testen
+### 3. Nodes starten
 
 ```bash
-# Im Backend-Container
-ros2 topic pub /vehicle/cmd std_msgs/String "data: 'FORWARD'"
+# Im laufenden Container
+docker exec -it speedpilot bash
 
-# Verfügbare Befehle: FORWARD, LEFT, RIGHT, STOP, BACKWARD
+# WebSocket-Bridge starten (Port 9091)
+ros2 run ros2_bridge bridge_node
+
+# Fahrzeugsteuerung starten
+ros2 run car_controller controller_node
+
+# Ultraschallsensor starten
+ros2 run ultrasonic_sensor ultrasonic_node
+
+# Hindernisvermeidung starten (optional)
+ros2 run lidar_obstacle_avoidance obstacle_avoidance_node
+```
+
+### 4. Kommunikation testen
+
+```bash
+# Im Backend-Container: Fahrbefehl manuell senden
+ros2 topic pub /vehicle_command custom_msgs/msg/VehicleCommand \
+  "{command: 'move', speed: 0.5, angle: 0.0}"
+
+# Befehl stoppen
+ros2 topic pub /vehicle_command custom_msgs/msg/VehicleCommand \
+  "{command: 'stop', speed: 0.0, angle: 0.0}"
+
+# Ultraschalldistanz überwachen
+ros2 topic echo /ultrasonic/distance
 ```
 
 ---

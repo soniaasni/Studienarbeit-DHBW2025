@@ -1,0 +1,14 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from custom_msgs/msg/Command.msg
+// generated code does not contain a copyright notice
+
+
+module custom_msgs {
+  module msg {
+    struct Command {
+      @verbatim (language="comment", text=
+        "The command to be executed")
+      string command;
+    };
+  };
+};

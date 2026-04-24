@@ -15,6 +15,5 @@ LICENSE*
 Dockerfile*
 docker-compose*
 build.sh
-entrypoint.sh
-workspace.sh
+install_native.sh
 bash_aliases.txt
