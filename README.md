@@ -46,13 +46,23 @@ flutter run           # Auf angeschlossenem Gerät ausführen
 cd speedpilot\ros_backend
 
 # Docker Image bauen & Container starten
-docker compose up
+docker compose build
 
 # Im Container arbeiten
-docker compose exec manipulation bash
+docker run -it ImageID bash
 
 # ROS 2 System starten
-ros2 launch speedpilot_backend bringup.launch.py
+bash 
+source /opt/ros/jazzy/setup.bash
+source /root/ros2_ws/install/setup.bash
+//ros2 launch speedpilot_backend bringup.launch.py
+
+------------
+# Patch 
+pip install protobuf
+colcon build
+source /opt/ros/jazzy/setup.bash && source install/setup.bash && python3 src/car_system_launch.py
+
 ```
 
 **Abhängigkeiten:** ROS 2 Jazzy, Python 3.12, Docker, CMake 3.28+

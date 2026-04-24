@@ -14,7 +14,7 @@ services:
       - /dev/gpiomem
       - /dev/mem
     ports:
-      - 9090:9090
+      - 9091:9091
     environment:
       - DISPLAY
       - XAUTHORITY=/tmp/.Xauthority
@@ -27,5 +27,4 @@ services:
       - /sys/class/gpio:/sys/class/gpio
       - /dev/gpiomem:/dev/gpiomem
       - /dev/mem:/dev/mem
-    mem_limit: 2G
     command: ["tail", "-f", "/dev/null"]

@@ -23,8 +23,6 @@ import json
 import threading
 import time
 
-import RPi.GPIO as GPIO
-
 from custom_msgs.msg import VehicleCommand
 
 from geometry_msgs.msg import PoseWithCovarianceStamped
@@ -39,6 +37,13 @@ from rclpy.node import Node
 from sensor_msgs.msg import LaserScan
 
 from websocket_server import WebsocketServer
+
+try:
+    import RPi.GPIO as GPIO
+    GPIO_AVAILABLE = True
+except ImportError:
+    GPIO = None
+    GPIO_AVAILABLE = False
 
 
 def patch_websocket_server():
@@ -102,10 +107,13 @@ class ROSBridge(Node):
     def __init__(self):
         """Initialize the ROSBridge node and start the WebSocket server."""
         super().__init__('ros_bridge')
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setwarnings(False)
-        GPIO.setup(16, GPIO.OUT)
-        GPIO.output(16, GPIO.HIGH)
+        if GPIO_AVAILABLE:
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setwarnings(False)
+            GPIO.setup(16, GPIO.OUT)
+            GPIO.output(16, GPIO.HIGH)
+        else:
+            self.get_logger().warn("RPi.GPIO not available, running in simulation mode. GPIO operations will be skipped.")
         self.cmd_publisher = self.create_publisher(VehicleCommand, 'vehicle_command', 10)
         self.get_logger().info('Starting WebSocket server...')
         self.websocket_thread = threading.Thread(
@@ -137,8 +145,8 @@ class ROSBridge(Node):
         patch_websocket_server()
         while True:
             try:
-                self.get_logger().info('WebSocket server running on port 9090...')
-                self.server = WebsocketServer(host='0.0.0.0', port=9090)
+                self.get_logger().info('WebSocket server running on port 9091...')
+                self.server = WebsocketServer(host='0.0.0.0', port=9091)
                 self.server.set_fn_new_client(self.on_new_client)
                 self.server.set_fn_message_received(self.websocket_handler)
                 self.server.set_fn_client_left(self.on_client_disconnect)

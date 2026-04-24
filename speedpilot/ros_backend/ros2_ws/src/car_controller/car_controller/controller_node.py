@@ -18,8 +18,6 @@ Subscribe to the 'vehicle_command' topic and convert VehicleCommand messages int
 vehicle control actions.
 """
 
-import RPi.GPIO as GPIO
-
 from custom_msgs.msg import VehicleCommand
 
 import rclpy
@@ -34,6 +32,13 @@ USE_ULTRASONIC = False  # Set to False to disable ultrasonic obstacle check
 ULTRASONIC_MIN_DISTANCE = 0.3  # Minimum allowed distance in meters
 STEERING_NEUTRAL_OFFSET = 7.5  # Adjust this slightly if the wheels are not centered (e.g., 7.54)
 STEERING_OFFSET = -0.2  # Applied to neutral, min, and max duty cycles for fine tuning
+
+try:
+    import RPi.GPIO as GPIO
+    GPIO_AVAILABLE = True
+except ImportError:
+    GPIO = None
+    GPIO_AVAILABLE = False
 
 
 class CarController(Node):
@@ -90,32 +95,38 @@ class CarController(Node):
         - Logs that the CarController node has started.
         """
         super().__init__('car_controller')
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setwarnings(False)
+        if GPIO_AVAILABLE:
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setwarnings(False)
 
-        # Pin configuration
-        self.motor_forward_pin = 24
-        self.motor_backward_pin = 25
-        self.motor_steering_pin = 23
+            # Pin configuration
+            self.motor_forward_pin = 24
+            self.motor_backward_pin = 25
+            self.motor_steering_pin = 23
 
-        # Setup pins
-        GPIO.setup(self.motor_forward_pin, GPIO.OUT)
-        GPIO.setup(self.motor_backward_pin, GPIO.OUT)
-        GPIO.setup(self.motor_steering_pin, GPIO.OUT)
+            # Setup pins
+            GPIO.setup(self.motor_forward_pin, GPIO.OUT)
+            GPIO.setup(self.motor_backward_pin, GPIO.OUT)
+            GPIO.setup(self.motor_steering_pin, GPIO.OUT)
 
-        # Set mode LED on pin 20 to indicate 'wait' mode
-        GPIO.setup(20, GPIO.OUT)
-        GPIO.output(20, GPIO.HIGH)
+            # Set mode LED on pin 20 to indicate 'wait' mode
+            GPIO.setup(20, GPIO.OUT)
+            GPIO.output(20, GPIO.HIGH)
 
-        # Initialize PWM at 50Hz
-        self.motor_forward = GPIO.PWM(self.motor_forward_pin, 50)
-        self.motor_backward = GPIO.PWM(self.motor_backward_pin, 50)
-        self.motor_steering = GPIO.PWM(self.motor_steering_pin, 50)
+            # Initialize PWM at 50Hz
+            self.motor_forward = GPIO.PWM(self.motor_forward_pin, 50)
+            self.motor_backward = GPIO.PWM(self.motor_backward_pin, 50)
+            self.motor_steering = GPIO.PWM(self.motor_steering_pin, 50)
 
-        # Start PWM with 0% duty cycle
-        self.motor_forward.start(0)
-        self.motor_backward.start(0)
-        self.motor_steering.start(7.5)
+            # Start PWM with 0% duty cycle
+            self.motor_forward.start(0)
+            self.motor_backward.start(0)
+            self.motor_steering.start(7.5)
+        else:
+            self.get_logger().warn("RPi.GPIO not available, running in simulation mode. GPIO operations will be skipped.")
+            self.motor_forward = None
+            self.motor_backward = None
+            self.motor_steering = None
 
         qos_profile = QoSProfile(
             depth=10,
@@ -164,8 +175,9 @@ class CarController(Node):
         elif msg.speed < 0:
             self.drive_backward(abs(msg.speed))
         else:
-            self.motor_forward.ChangeDutyCycle(0)
-            self.motor_backward.ChangeDutyCycle(0)
+            if GPIO_AVAILABLE:
+                self.motor_forward.ChangeDutyCycle(0)
+                self.motor_backward.ChangeDutyCycle(0)
             self.get_logger().info('No movement command received (speed is zero).')
 
         # Use the angle field for steering
@@ -182,9 +194,13 @@ class CarController(Node):
         If USE_ULTRASONIC is enabled and an obstacle is detected within ULTRASONIC_MIN_DISTANCE,
         forward motion is blocked and a warning is logged.
         """
+        if not GPIO_AVAILABLE:
+            self.get_logger().info(f'Simulation: Driving forward at speed {speed}')
+            return
         if USE_ULTRASONIC and self.ultrasonic_distance < ULTRASONIC_MIN_DISTANCE:
-            self.motor_forward.ChangeDutyCycle(0)
-            self.motor_backward.ChangeDutyCycle(0)
+            if GPIO_AVAILABLE:
+                self.motor_forward.ChangeDutyCycle(0)
+                self.motor_backward.ChangeDutyCycle(0)
             self.get_logger().warn(
                 f'Obstacle too close ({self.ultrasonic_distance:.2f} m). Forward motion blocked.'
             )
@@ -209,6 +225,9 @@ class CarController(Node):
         Returns:
             None
         """
+        if not GPIO_AVAILABLE:
+            self.get_logger().info(f'Simulation: Driving backward at speed {speed}')
+            return
         pwm_speed = min(max(speed * 100, 0), 100)
         self.motor_forward.ChangeDutyCycle(0)
         self.motor_backward.ChangeDutyCycle(pwm_speed)
@@ -237,7 +256,8 @@ class CarController(Node):
 
         duty_cycle = max(min(duty_cycle, maximum_duty_cycle), minimum_duty_cycle)
 
-        self.motor_steering.ChangeDutyCycle(duty_cycle)
+        if GPIO_AVAILABLE:
+            self.motor_steering.ChangeDutyCycle(duty_cycle)
         self.get_logger().info(f'PWM: Steering with angle {angle}, duty_cycle {duty_cycle}')
 
 
@@ -262,7 +282,8 @@ def main(args=None):
         pass
     finally:
         node.destroy_node()
-        GPIO.cleanup()
+        if GPIO_AVAILABLE:
+            GPIO.cleanup()
         rclpy.shutdown()
 
 
