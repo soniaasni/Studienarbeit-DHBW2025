@@ -3,8 +3,6 @@
 # Stage 1: Builder
 FROM ros:jazzy AS builder
 
-LABEL maintainer="MaxDomitrovic<max@domitrovic.com>"
-
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
 ENV DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-c"]
@@ -23,8 +21,8 @@ RUN rosdep update && \
     echo "source /opt/ros/jazzy/setup.bash" >> /root/.bashrc
 
 # Kopiere Workspace Source
-COPY ros2_ws/src/ /root/ros2_ws/src/
 WORKDIR /root/ros2_ws
+COPY ros2_ws/src/ /root/ros2_ws/src/
 RUN source /opt/ros/jazzy/setup.bash && \
     rosdep update && \
     rosdep install --from-path src --ignore-src --rosdistro jazzy -y --skip-keys "actionlib catkin message_generation rviz rosparam_shortcuts" && \
@@ -33,8 +31,6 @@ RUN source /opt/ros/jazzy/setup.bash && \
 
 # Stage 2: Runtime (minimal)
 FROM ros:jazzy
-
-LABEL maintainer="MaxDomitrovic<max@domitrovic.com>"
 
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
 ENV DEBIAN_FRONTEND=noninteractive
@@ -63,11 +59,10 @@ RUN echo "source /opt/ros/jazzy/setup.bash" >> /root/.bashrc && \
 # Verzeichnisse
 RUN mkdir -p /etc/udev/rules.d /root/ros2_ws/build /root/ros2_ws/install /root/ros2_ws/log
 
-# Kopiere entrypoint script
-COPY docker/entrypoint.sh /root/entrypoint.sh
-RUN dos2unix /root/entrypoint.sh 2>/dev/null || sed -i 's/\r$//' /root/entrypoint.sh && chmod +x /root/entrypoint.sh
 
-WORKDIR /root/ros2_ws
+# Entrypoint
+COPY docker/entrypoint.sh /root/entrypoint.sh
+RUN chmod +x /root/entrypoint.sh
 
 ENTRYPOINT ["/root/entrypoint.sh"]
-CMD ["/bin/bash", "-c", "tail -f /dev/null"]
+
