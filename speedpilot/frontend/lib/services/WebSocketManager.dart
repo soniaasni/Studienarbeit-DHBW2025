@@ -33,9 +33,14 @@ class WebSocketManager {
 
   // Send raw string message via WebSocket
   void sendMessage(String message) {
-    _channel?.sink.add(message);
-    print("Message sent: $message");
+  if (_channel == null) {
+    print("ERROR: WebSocket not connected");
+    return;
   }
+
+  _channel!.sink.add(message);
+  print("Message sent: $message");
+}
 
   // Send a JSON driving command containing current speed and angle
   void _sendDrivingCommand() {
