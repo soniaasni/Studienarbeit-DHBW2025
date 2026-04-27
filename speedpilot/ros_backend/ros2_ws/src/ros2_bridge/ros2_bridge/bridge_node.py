@@ -39,10 +39,10 @@ from sensor_msgs.msg import LaserScan
 from websocket_server import WebsocketServer
 
 try:
-    import RPi.GPIO as GPIO
+    import gpiod
     GPIO_AVAILABLE = True
 except ImportError:
-    GPIO = None
+    gpiod = None
     GPIO_AVAILABLE = False
 
 
@@ -108,12 +108,15 @@ class ROSBridge(Node):
         """Initialize the ROSBridge node and start the WebSocket server."""
         super().__init__('ros_bridge')
         if GPIO_AVAILABLE:
-            GPIO.setmode(GPIO.BCM)
-            GPIO.setwarnings(False)
-            GPIO.setup(16, GPIO.OUT)
-            GPIO.output(16, GPIO.HIGH)
+            self._gpio_chip = gpiod.Chip("gpiochip4")
+            cfg = gpiod.LineRequest()
+            cfg.consumer = "ros_bridge"
+            cfg.request_type = gpiod.LINE_REQ_DIR_OUT
+            self._line_led = self._gpio_chip.get_line(16)
+            self._line_led.request(cfg)
+            self._line_led.set_value(1)
         else:
-            self.get_logger().warn("RPi.GPIO not available, running in simulation mode. GPIO operations will be skipped.")
+            self.get_logger().warn("gpiod not available, running in simulation mode. GPIO operations will be skipped.")
         self.cmd_publisher = self.create_publisher(VehicleCommand, 'vehicle_command', 10)
         self.get_logger().info('Starting WebSocket server...')
         self.websocket_thread = threading.Thread(

@@ -33,12 +33,67 @@ ULTRASONIC_MIN_DISTANCE = 0.3  # Minimum allowed distance in meters
 STEERING_NEUTRAL_OFFSET = 7.5  # Adjust this slightly if the wheels are not centered (e.g., 7.54)
 STEERING_OFFSET = -0.2  # Applied to neutral, min, and max duty cycles for fine tuning
 
+import threading
+import time
+
 try:
-    import RPi.GPIO as GPIO
+    import gpiod
     GPIO_AVAILABLE = True
 except ImportError:
-    GPIO = None
+    gpiod = None
     GPIO_AVAILABLE = False
+
+
+class SoftwarePWM:
+    """Software PWM implementation via a gpiod output line."""
+
+    def __init__(self, line, frequency):
+        self._line = line
+        self._period = 1.0 / frequency
+        self._duty_cycle = 0.0
+        self._running = False
+        self._thread = None
+        self._lock = threading.Lock()
+
+    def start(self, duty_cycle):
+        """Start PWM output with the given duty cycle (0–100)."""
+        self._duty_cycle = float(duty_cycle)
+        self._running = True
+        self._thread = threading.Thread(target=self._run, daemon=True)
+        self._thread.start()
+
+    def _run(self):
+        while self._running:
+            with self._lock:
+                dc = self._duty_cycle
+            if dc <= 0.0:
+                self._line.set_value(0)
+                time.sleep(self._period)
+            elif dc >= 100.0:
+                self._line.set_value(1)
+                time.sleep(self._period)
+            else:
+                on_time = self._period * dc / 100.0
+                off_time = self._period - on_time
+                self._line.set_value(1)
+                time.sleep(on_time)
+                self._line.set_value(0)
+                time.sleep(off_time)
+
+    def ChangeDutyCycle(self, duty_cycle):
+        """Update the duty cycle (0–100) thread-safely."""
+        with self._lock:
+            self._duty_cycle = float(duty_cycle)
+
+    def stop(self):
+        """Stop PWM output and drive the line low."""
+        self._running = False
+        if self._thread:
+            self._thread.join(timeout=1.0)
+        try:
+            self._line.set_value(0)
+        except Exception:
+            pass
 
 
 class CarController(Node):
@@ -96,34 +151,44 @@ class CarController(Node):
         """
         super().__init__('car_controller')
         if GPIO_AVAILABLE:
-            GPIO.setmode(GPIO.BCM)
-            GPIO.setwarnings(False)
+            self._gpio_chip = gpiod.Chip("gpiochip4")
 
             # Pin configuration
             self.motor_forward_pin = 24
             self.motor_backward_pin = 25
             self.motor_steering_pin = 23
 
-            # Setup pins
-            GPIO.setup(self.motor_forward_pin, GPIO.OUT)
-            GPIO.setup(self.motor_backward_pin, GPIO.OUT)
-            GPIO.setup(self.motor_steering_pin, GPIO.OUT)
+            # Request output lines
+            cfg = gpiod.LineRequest()
+            cfg.consumer = "car_controller"
+            cfg.request_type = gpiod.LINE_REQ_DIR_OUT
+
+            self._line_forward = self._gpio_chip.get_line(self.motor_forward_pin)
+            self._line_forward.request(cfg)
+
+            self._line_backward = self._gpio_chip.get_line(self.motor_backward_pin)
+            self._line_backward.request(cfg)
+
+            self._line_steering = self._gpio_chip.get_line(self.motor_steering_pin)
+            self._line_steering.request(cfg)
 
             # Set mode LED on pin 20 to indicate 'wait' mode
-            GPIO.setup(20, GPIO.OUT)
-            GPIO.output(20, GPIO.HIGH)
+            self._line_led = self._gpio_chip.get_line(20)
+            self._line_led.request(cfg)
+            self._line_led.set_value(1)
 
-            # Initialize PWM at 50Hz
-            self.motor_forward = GPIO.PWM(self.motor_forward_pin, 50)
-            self.motor_backward = GPIO.PWM(self.motor_backward_pin, 50)
-            self.motor_steering = GPIO.PWM(self.motor_steering_pin, 50)
+            # Initialize software PWM at 50 Hz
+            self.motor_forward = SoftwarePWM(self._line_forward, 50)
+            self.motor_backward = SoftwarePWM(self._line_backward, 50)
+            self.motor_steering = SoftwarePWM(self._line_steering, 50)
 
             # Start PWM with 0% duty cycle
             self.motor_forward.start(0)
             self.motor_backward.start(0)
             self.motor_steering.start(7.5)
         else:
-            self.get_logger().warn("RPi.GPIO not available, running in simulation mode. GPIO operations will be skipped.")
+            self.get_logger().warn("gpiod not available, running in simulation mode. GPIO operations will be skipped.")
+            self._gpio_chip = None
             self.motor_forward = None
             self.motor_backward = None
             self.motor_steering = None
@@ -282,8 +347,15 @@ def main(args=None):
         pass
     finally:
         node.destroy_node()
-        if GPIO_AVAILABLE:
-            GPIO.cleanup()
+        if GPIO_AVAILABLE and node._gpio_chip is not None:
+            for pwm in (node.motor_forward, node.motor_backward, node.motor_steering):
+                if pwm:
+                    pwm.stop()
+            for line in ('_line_forward', '_line_backward', '_line_steering', '_line_led'):
+                ln = getattr(node, line, None)
+                if ln:
+                    ln.release()
+            node._gpio_chip.close()
         rclpy.shutdown()
 
 

@@ -34,7 +34,7 @@ GPIO configuration:
 
 import time
 
-import RPi.GPIO as GPIO
+import gpiod
 
 import rclpy
 from rclpy.node import Node
@@ -87,10 +87,21 @@ class UltrasonicSensorNode(Node):
         self.timer = self.create_timer(0.2, self.read_and_publish)
 
         # GPIO Setup
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup(TRIG_PIN, GPIO.OUT)
-        GPIO.setup(ECHO_PIN, GPIO.IN)
-        GPIO.output(TRIG_PIN, False)
+        self._gpio_chip = gpiod.Chip("gpiochip4")
+
+        cfg_out = gpiod.LineRequest()
+        cfg_out.consumer = "ultrasonic_sensor"
+        cfg_out.request_type = gpiod.LINE_REQ_DIR_OUT
+        self._line_trig = self._gpio_chip.get_line(TRIG_PIN)
+        self._line_trig.request(cfg_out)
+
+        cfg_in = gpiod.LineRequest()
+        cfg_in.consumer = "ultrasonic_sensor"
+        cfg_in.request_type = gpiod.LINE_REQ_DIR_IN
+        self._line_echo = self._gpio_chip.get_line(ECHO_PIN)
+        self._line_echo.request(cfg_in)
+
+        self._line_trig.set_value(0)
         self.get_logger().info('Ultraschallsensor initialisiert (GPIO 9/11)')
 
     def read_and_publish(self):
@@ -124,23 +135,23 @@ class UltrasonicSensorNode(Node):
             or None if a timeout occurs or the measurement is out of range.
         """
         # Trigger senden
-        GPIO.output(TRIG_PIN, True)
+        self._line_trig.set_value(1)
         time.sleep(0.00001)
-        GPIO.output(TRIG_PIN, False)
+        self._line_trig.set_value(0)
 
         start_time = time.time()
         stop_time = time.time()
 
         # Warte auf Echo Start
         timeout_start = time.time()
-        while GPIO.input(ECHO_PIN) == 0:
+        while self._line_echo.get_value() == 0:
             start_time = time.time()
             if time.time() - timeout_start > 0.02:
                 return None  # Timeout
 
         # Warte auf Echo Ende
         timeout_start = time.time()
-        while GPIO.input(ECHO_PIN) == 1:
+        while self._line_echo.get_value() == 1:
             stop_time = time.time()
             if time.time() - timeout_start > 0.02:
                 return None  # Timeout
@@ -160,7 +171,9 @@ class UltrasonicSensorNode(Node):
         This method cleans up the GPIO to prevent resource leaks and then calls the superclass's
         destroy_node method to complete the remaining shutdown procedures.
         """
-        GPIO.cleanup()
+        self._line_trig.release()
+        self._line_echo.release()
+        self._gpio_chip.close()
         super().destroy_node()
 
 
