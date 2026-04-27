@@ -39,7 +39,7 @@ SHELL ["/bin/bash", "-c"]
 # Minimale Installationen für Runtime
 RUN apt-get update -q && \
     apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends \
+    apt-get install -y --no-install-recommends && \
     python3-libgpiod gpiod && \
     wget curl git python3-pip python3-rosdep && \
     python3-argcomplete python3-colcon-common-extensions && \
