@@ -16,17 +16,7 @@ services:
       - /dev/gpiochip2
       - /dev/gpiochip3
       - /dev/gpiochip4
-    ports:
-      - 9091:9091
-    environment:
-      - DISPLAY
-      - XAUTHORITY=/tmp/.Xauthority
     volumes:
       - ../ros2_ws:/root/ros2_ws
-    command: >
-      bash -c "
-        source /opt/ros/jazzy/setup.bash &&
-        source /root/ros2_ws/install/setup.bash &&
-        python3 src/car_system_launch.py
-      "
+    restart: unless-stopped
 
