@@ -40,10 +40,10 @@ SHELL ["/bin/bash", "-c"]
 RUN apt-get update -q && \
     apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
-        python3-libgpiod gpiod && \
-        wget curl git python3-pip python3-rosdep \
-        python3-argcomplete python3-colcon-common-extensions \
-        python3-networkx python3-vcstool libserial-dev && \
+    python3-libgpiod gpiod && \
+    wget curl git python3-pip python3-rosdep && \
+    python3-argcomplete python3-colcon-common-extensions && \
+    python3-networkx python3-vcstool libserial-dev && \
     python3 -m pip install --no-cache-dir websocket-server && \
     python3 -m pip install protobuf && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
