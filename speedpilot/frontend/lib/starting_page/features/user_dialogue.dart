@@ -66,7 +66,7 @@ class _AddUserDialogueState extends State<AddUserDialogue> {
             // Create new CardList object with prefixed ws:// IP address
             final device = CardList(
               nameController.text,
-              "ws://${ipaddressController.text}",
+             "ws://${ipaddressController.text}:9091",
             );
             widget.addDeviceCard(device); // Pass to parent
             Navigator.pop(context); // Close the dialog
