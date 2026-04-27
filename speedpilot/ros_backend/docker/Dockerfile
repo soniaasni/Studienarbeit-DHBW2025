@@ -43,13 +43,11 @@ SHELL ["/bin/bash", "-c"]
 # Minimale Installationen für Runtime
 RUN apt-get update -q && \
     apt-get upgrade -y && \
-    apt-get install -y --no-install-recommends && \
-    wget curl git python3-pip python3-rosdep && \
-    python3-argcomplete python3-colcon-common-extensions && \
+    apt-get install -y --no-install-recommends \
+    wget curl git python3-pip python3-rosdep \
+    python3-argcomplete python3-colcon-common-extensions \
     python3-networkx python3-vcstool libserial-dev && \
-    python3 -m pip install --no-cache-dir websocket-server && \
-    python3 -m pip install protobuf && \
-    python3 -m pip install gpiod && \
+    python3 -m pip install --no-cache-dir websocket-server protobuf gpiod && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Kopiere gebaute Artefakte und Source vom Builder
