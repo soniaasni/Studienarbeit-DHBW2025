@@ -40,7 +40,9 @@ from websocket_server import WebsocketServer
 
 try:
     import gpiod
-    gpiod.Chip("/dev/gpiochip4").close()  # probe: raises if device absent
+    from gpiod.line import Direction, Value
+    with gpiod.Chip("/dev/gpiochip4"):
+        pass
     GPIO_AVAILABLE = True
 except (ImportError, FileNotFoundError, OSError):
     gpiod = None
@@ -109,15 +111,18 @@ class ROSBridge(Node):
         """Initialize the ROSBridge node and start the WebSocket server."""
         super().__init__('ros_bridge')
         if GPIO_AVAILABLE:
-            self._gpio_chip = gpiod.Chip("/dev/gpiochip4")
-            cfg = gpiod.LineRequest()
-            cfg.consumer = "ros_bridge"
-            cfg.request_type = gpiod.LINE_REQ_DIR_OUT
-            self._line_led = self._gpio_chip.get_line(16)
-            self._line_led.request(cfg)
-            self._line_led.set_value(1)
+            self._gpio_request = gpiod.request_lines(
+                "/dev/gpiochip4",
+                consumer="ros_bridge",
+                config={
+                    16: gpiod.LineSettings(
+                        direction=Direction.OUTPUT, output_value=Value.INACTIVE),
+                }
+            )
+            self._gpio_request.set_value(16, Value.ACTIVE)
         else:
             self.get_logger().warn("gpiod not available, running in simulation mode. GPIO operations will be skipped.")
+            self._gpio_request = None
         self.cmd_publisher = self.create_publisher(VehicleCommand, 'vehicle_command', 10)
         self.get_logger().info('Starting WebSocket server...')
         self.websocket_thread = threading.Thread(
@@ -356,6 +361,8 @@ def main(args=None):
     finally:
         ros_bridge.get_logger().info('Shutting down ROS2 Bridge...')
         ros_bridge.destroy_node()
+        if GPIO_AVAILABLE and ros_bridge._gpio_request is not None:
+            ros_bridge._gpio_request.release()
         rclpy.shutdown()
 
 
