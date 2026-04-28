@@ -38,8 +38,9 @@ import time
 
 try:
     import gpiod
+    gpiod.Chip("gpiochip4").close()  # probe: raises if device absent
     GPIO_AVAILABLE = True
-except ImportError:
+except (ImportError, FileNotFoundError, OSError):
     gpiod = None
     GPIO_AVAILABLE = False
 

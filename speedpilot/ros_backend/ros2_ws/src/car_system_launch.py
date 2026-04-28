@@ -31,13 +31,13 @@ def generate_launch_description():
             executable='controller_node',
             name='car_controller',
             output='screen'
-        )#,
-        #Node(
-        #    package='lidar_obstacle_avoidance',
-        #    executable='obstacle_avoidance_node',
-        #    name='obstacle_avoidance',
-        #    output='screen'
-        #)
+        ),
+        Node(
+            package='lidar_obstacle_avoidance',
+            executable='obstacle_avoidance_node',
+            name='obstacle_avoidance',
+            output='screen'
+        )
     ])
 
 

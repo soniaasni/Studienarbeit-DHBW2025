@@ -55,7 +55,15 @@ if [ ! -f "$ROS_WS/install/setup.bash" ]; then
     rm -rf build log
 fi
 
-find "$ROS_WS/install" -name "*.bash" -o -name "*.sh" | xargs sed -i 's/\r//'
+# Strip CRLF from all text/script files in install (handles Windows volume mounts)
+find "$ROS_WS/install" -type f \( -name "*.bash" -o -name "*.sh" -o -name "*.py" -o -name "*.dsv" -o -name "*.xml" \) \
+    | xargs sed -i 's/\r//' 2>/dev/null || true
+# Fix shebanged executables with no extension (e.g. colcon-generated wrapper scripts)
+find "$ROS_WS/install" -type f -perm /111 | while read -r f; do
+    if head -c 2 "$f" | grep -q $'^#!'; then
+        sed -i 's/\r//' "$f"
+    fi
+done
 source "$ROS_WS/install/setup.bash"
 
 echo "[ENTRYPOINT] Starte Car System…"
