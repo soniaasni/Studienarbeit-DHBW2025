@@ -45,6 +45,8 @@ from std_msgs.msg import Float32
 TRIG_PIN = 11  # trigger (green cable)
 ECHO_PIN = 9   # echo (blue cable)
 
+#TODO: define GPIO-Pins for the other ultrasonicsensor
+
 
 class UltrasonicSensorNode(Node):
     """
