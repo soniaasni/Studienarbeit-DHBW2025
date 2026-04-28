@@ -51,7 +51,7 @@ except (ImportError, FileNotFoundError, OSError):
     GPIO_AVAILABLE = False
 
 
-TRIG_PIN = 7   # trigger (GPIO 7, physical pin 26, green cable)
+TRIG_PIN = 26  # trigger (GPIO 26, physical pin 37, green cable)
 ECHO_PIN = 21  # echo (GPIO 21, physical pin 40)
 
 
