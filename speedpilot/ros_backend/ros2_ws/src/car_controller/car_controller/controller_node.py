@@ -38,7 +38,7 @@ import time
 
 try:
     import gpiod
-    gpiod.Chip("gpiochip4").close()  # probe: raises if device absent
+    gpiod.Chip("/dev/gpiochip4").close()  # probe: raises if device absent
     GPIO_AVAILABLE = True
 except (ImportError, FileNotFoundError, OSError):
     gpiod = None
@@ -152,7 +152,7 @@ class CarController(Node):
         """
         super().__init__('car_controller')
         if GPIO_AVAILABLE:
-            self._gpio_chip = gpiod.Chip("gpiochip4")
+            self._gpio_chip = gpiod.Chip("/dev/gpiochip4")
 
             # Pin configuration
             self.motor_forward_pin = 24

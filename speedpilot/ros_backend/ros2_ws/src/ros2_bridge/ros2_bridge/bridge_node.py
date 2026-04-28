@@ -40,7 +40,7 @@ from websocket_server import WebsocketServer
 
 try:
     import gpiod
-    gpiod.Chip("gpiochip4").close()  # probe: raises if device absent
+    gpiod.Chip("/dev/gpiochip4").close()  # probe: raises if device absent
     GPIO_AVAILABLE = True
 except (ImportError, FileNotFoundError, OSError):
     gpiod = None
@@ -109,7 +109,7 @@ class ROSBridge(Node):
         """Initialize the ROSBridge node and start the WebSocket server."""
         super().__init__('ros_bridge')
         if GPIO_AVAILABLE:
-            self._gpio_chip = gpiod.Chip("gpiochip4")
+            self._gpio_chip = gpiod.Chip("/dev/gpiochip4")
             cfg = gpiod.LineRequest()
             cfg.consumer = "ros_bridge"
             cfg.request_type = gpiod.LINE_REQ_DIR_OUT
