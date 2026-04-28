@@ -55,6 +55,7 @@ if [ ! -f "$ROS_WS/install/setup.bash" ]; then
     rm -rf build log
 fi
 
+find "$ROS_WS/install" -name "*.bash" -o -name "*.sh" | xargs sed -i 's/\r//'
 source "$ROS_WS/install/setup.bash"
 
 echo "[ENTRYPOINT] Starte Car System…"

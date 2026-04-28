@@ -10,6 +10,9 @@ services:
     ipc: host
     network_mode: host
     privileged: true
+    
+    ports:
+      - 9091:9091
     devices:
       - /dev/gpiochip0
       - /dev/gpiochip1
@@ -24,3 +27,13 @@ services:
     volumes:
       - ../ros2_ws:/root/ros2_ws
     restart: unless-stopped
+    command: >
+      bash -c "
+        colcon build --packages-select ros2_bridge car_controller lidar_obstacle_avoidance ultrasonic_sensor custom_msgs &&
+        ros2 launch speedpilot_backend bringup.launch.py &&
+        source /opt/ros/jazzy/setup.bash && source install/setup.bash && python3 src/car_system_launch.py &&
+        ros2 run ros2_bridge bridge_node &&
+        ros2 run car_controller car_controller_node &&
+        ros2 run lidar_obstacle_avoidance lidar_obstacle_avoidance_node &&
+        ros2 run ultrasonic_sensor ultrasonic_sensor_node
+      "

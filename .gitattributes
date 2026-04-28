@@ -3,6 +3,7 @@
 
 # Shell-Skripte immer mit LF speichern (für Linux/Docker)
 *.sh text eol=lf
+*.bash text eol=lf
 
 # Dockerfile immer LF
 Dockerfile text eol=lf

@@ -21,6 +21,14 @@
 *.glsdefs
 *.ist
 
+# ROS2 build artifacts (Linux binaries — built inside Docker, not on Windows)
+speedpilot/ros_backend/ros2_ws/install/
+speedpilot/ros_backend/ros2_ws/build/
+speedpilot/ros_backend/ros2_ws/log/
+speedpilot/ros_backend/install/
+speedpilot/ros_backend/build/
+speedpilot/ros_backend/log/
+
 # Python
 *.pyc
 *.pyo
