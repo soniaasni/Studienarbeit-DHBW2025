@@ -16,7 +16,11 @@ services:
       - /dev/gpiochip2
       - /dev/gpiochip3
       - /dev/gpiochip4
+      - /dev/gpiochip0
+      - /dev/gpiochip1
+      - /dev/gpiochip2
+      - /dev/gpiochip3
+      - /dev/gpiochip4
     volumes:
       - ../ros2_ws:/root/ros2_ws
     restart: unless-stopped
-
