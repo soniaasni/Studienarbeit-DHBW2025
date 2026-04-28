@@ -43,7 +43,7 @@ flutter run           # Auf angeschlossenem Gerät ausführen
 ### 2. Backend - ROS 2 + Docker
 
 ```bash
-cd speedpilot/ros_backend
+cd speedpilot\ros_backend\docker
 
 # Docker Image bauen
 cd docker
@@ -52,46 +52,199 @@ bash build.sh
 # Container starten (docker-compose)
 docker compose up
 
-# Oder manuell starten
-docker run -it --privileged --network host \
-  -v $(pwd)/../ros2_ws:/root/ros2_ws \
-  speedpilot:latest bash
+# Im Container arbeiten (nur gpiochip4 ist essentiell)
+docker run -it   --device /dev/gpiochip0 --device /dev/gpiochip1 --device /dev/gpiochip2 --device /dev/gpiochip3 --device /dev/gpiochip4 --privileged ImageID bash
+# Im Container arbeiten (nur gpiochip4 ist essentiell)
+docker run -it   --device /dev/gpiochip0 --device /dev/gpiochip1 --device /dev/gpiochip2 --device /dev/gpiochip3 --device /dev/gpiochip4 --privileged ImageID bash
+
+# ROS 2 System starten
+bash 
+source /opt/ros/jazzy/setup.bash
+source /root/ros2_ws/install/setup.bash
+ros2 launch speedpilot_backend bringup.launch.py
+ros2 launch speedpilot_backend bringup.launch.py
+
+------------
+# Patch 
+colcon build
+source /opt/ros/jazzy/setup.bash && source install/setup.bash && python3 src/car_system_launch.py
+
+# Save Docker Image for offline capability
+docker save -o ros2_speedpilot_backend.tar ImageName
+
+# Save Docker Image for offline capability
+docker save -o ros2_speedpilot_backend.tar ImageName
+
 ```
 
-**Abhängigkeiten:** Docker 24+, Docker Compose v2
+**Abhängigkeiten:** ROS 2 Jazzy, Python 3.12, Docker, CMake 3.28+
 
-### 3. Nodes starten
-
-```bash
-# Im laufenden Container
-docker exec -it speedpilot bash
-
-# WebSocket-Bridge starten (Port 9091)
-ros2 run ros2_bridge bridge_node
-
-# Fahrzeugsteuerung starten
-ros2 run car_controller controller_node
-
-# Ultraschallsensor starten
-ros2 run ultrasonic_sensor ultrasonic_node
-
-# Hindernisvermeidung starten (optional)
-ros2 run lidar_obstacle_avoidance obstacle_avoidance_node
-```
-
-### 4. Kommunikation testen
+### 3. Kommunikation testen
 
 ```bash
 # Im Backend-Container: Fahrbefehl manuell senden
 ros2 topic pub /vehicle_command custom_msgs/msg/VehicleCommand \
   "{command: 'move', speed: 0.5, angle: 0.0}"
 
-# Befehl stoppen
-ros2 topic pub /vehicle_command custom_msgs/msg/VehicleCommand \
-  "{command: 'stop', speed: 0.0, angle: 0.0}"
+# Verfügbare Befehle: FORWARD, LEFT, RIGHT, STOP, BACKWARD
+```
 
-# Ultraschalldistanz überwachen
-ros2 topic echo /ultrasonic/distance
+### 4. Schnellstart auf Pi nach initialem Builden und speichern des Docker Images:
+```bash
+docker load -i ros2_speedpilot_backend.tar
+docker compose up
+```
+
+---
+
+## TODOs
+
+### Code Umschreibung
+Das migrieren von Ubuntu Desktop (Version 23.x) zu Ubuntu Server (24.x LTS Version) führte dazu, dass die GPIO Pins nicht mehr bekannt sind.
+
+Der Code muss umgeschrieben werden, um statt der Library RPi.GPIO gpiod verwendet werden:
+```python
+try:
+    import RPi.GPIO as GPIO
+    GPIO_AVAILABLE = True
+except ImportError:
+    GPIO_AVAILABLE=FALSE
+```
+muss umgeschrieben werden zu:
+```python
+try:
+    import gpiod
+    GPIO_AVAILABLE = True
+except ImportError:
+    GPIO_AVAILABLE = False
+```
+
+#### Wir sollten hauptsächlich gpiochip4 verwenden, die anderen GPIo's sind USB usw.
+
+RPi.GPIO -> libgpiod mapping
+
+| RPi.GPIO | libgpiod |
+|----------|----------|
+|GPIO.setmode(GPIO.BCM) ≤ Not needed - libgpiod uses chip + line numbers |
+| GPIO.setup(pin, GPIO.OUT) | line = chip.get_line(pin); line.request(OUTPUT) |
+| GPIO.output(pin, GPIO.HIGH) | line.set_value(1)
+| GPIO.cleanup() | line.release() |
+
+Als Beispielcode:
+#### Alt:
+```python
+import RPi.GPIO as GPIO
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(17, GPIO.OUT)
+
+GPIO.output(17, GPIO.HIGH)
+GPIO.output(17, GPIO.LOW)
+
+GPIO.cleanup()
+```
+
+#### Neu:
+
+```python
+import gpiod
+import time
+
+chip = gpiod.Chip("gpiochip4")   # use gpiochip4
+line = chip.get_line(17)         # BCM pin number
+
+config = gpiod.LineRequest()
+config.consumer = "car_controller"
+config.request_type = gpiod.LINE_REQ_DIR_OUT
+
+line.request(config)
+
+line.set_value(1)
+time.sleep(1)
+line.set_value(0)
+
+line.release()
+chip.close()
+
+```
+
+### 4. Schnellstart auf Pi nach initialem Builden und speichern des Docker Images:
+```bash
+docker load -i ros2_speedpilot_backend.tar
+docker compose up
+```
+
+---
+
+## TODOs
+
+### Code Umschreibung
+Das migrieren von Ubuntu Desktop (Version 23.x) zu Ubuntu Server (24.x LTS Version) führte dazu, dass die GPIO Pins nicht mehr bekannt sind.
+
+Der Code muss umgeschrieben werden, um statt der Library RPi.GPIO gpiod verwendet werden:
+```python
+try:
+    import RPi.GPIO as GPIO
+    GPIO_AVAILABLE = True
+except ImportError:
+    GPIO_AVAILABLE=FALSE
+```
+muss umgeschrieben werden zu:
+```python
+try:
+    import gpiod
+    GPIO_AVAILABLE = True
+except ImportError:
+    GPIO_AVAILABLE = False
+```
+
+#### Wir sollten hauptsächlich gpiochip4 verwenden, die anderen GPIo's sind USB usw.
+
+RPi.GPIO -> libgpiod mapping
+
+| RPi.GPIO | libgpiod |
+|----------|----------|
+|GPIO.setmode(GPIO.BCM) ≤ Not needed - libgpiod uses chip + line numbers |
+| GPIO.setup(pin, GPIO.OUT) | line = chip.get_line(pin); line.request(OUTPUT) |
+| GPIO.output(pin, GPIO.HIGH) | line.set_value(1)
+| GPIO.cleanup() | line.release() |
+
+Als Beispielcode:
+#### Alt:
+```python
+import RPi.GPIO as GPIO
+
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(17, GPIO.OUT)
+
+GPIO.output(17, GPIO.HIGH)
+GPIO.output(17, GPIO.LOW)
+
+GPIO.cleanup()
+```
+
+#### Neu:
+
+```python
+import gpiod
+import time
+
+chip = gpiod.Chip("gpiochip4")   # use gpiochip4
+line = chip.get_line(17)         # BCM pin number
+
+config = gpiod.LineRequest()
+config.consumer = "car_controller"
+config.request_type = gpiod.LINE_REQ_DIR_OUT
+
+line.request(config)
+
+line.set_value(1)
+time.sleep(1)
+line.set_value(0)
+
+line.release()
+chip.close()
+
 ```
 
 ---

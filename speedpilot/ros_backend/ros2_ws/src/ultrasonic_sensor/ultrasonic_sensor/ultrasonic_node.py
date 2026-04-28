@@ -34,12 +34,21 @@ GPIO configuration:
 
 import time
 
-import RPi.GPIO as GPIO
-
 import rclpy
 from rclpy.node import Node
 
 from std_msgs.msg import Float32
+
+
+try:
+    import gpiod
+    from gpiod.line import Direction, Value
+    with gpiod.Chip("/dev/gpiochip4"):
+        pass
+    GPIO_AVAILABLE = True
+except (ImportError, FileNotFoundError, OSError):
+    gpiod = None
+    GPIO_AVAILABLE = False
 
 
 TRIG_PIN = 11  # trigger (green cable)
@@ -86,12 +95,22 @@ class UltrasonicSensorNode(Node):
         self.publisher_ = self.create_publisher(Float32, '/ultrasonic/distance', 10)
         self.timer = self.create_timer(0.2, self.read_and_publish)
 
-        # GPIO Setup
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup(TRIG_PIN, GPIO.OUT)
-        GPIO.setup(ECHO_PIN, GPIO.IN)
-        GPIO.output(TRIG_PIN, False)
-        self.get_logger().info('Ultraschallsensor initialisiert (GPIO 9/11)')
+        if GPIO_AVAILABLE:
+            self._gpio_request = gpiod.request_lines(
+                "/dev/gpiochip4",
+                consumer="ultrasonic_sensor",
+                config={
+                    TRIG_PIN: gpiod.LineSettings(
+                        direction=Direction.OUTPUT, output_value=Value.INACTIVE),
+                    ECHO_PIN: gpiod.LineSettings(
+                        direction=Direction.INPUT),
+                }
+            )
+            self.get_logger().info('Ultraschallsensor initialisiert (GPIO 9/11)')
+        else:
+            self._gpio_request = None
+            self.get_logger().warn(
+                'gpiod not available, running in simulation mode. GPIO operations will be skipped.')
 
     def read_and_publish(self):
         """
@@ -109,7 +128,8 @@ class UltrasonicSensorNode(Node):
             self.publisher_.publish(msg)
             self.get_logger().info(f'Distanz: {distance:.2f} m')
         else:
-            self.get_logger().warning('Ungültige Messung')
+            if GPIO_AVAILABLE:
+                self.get_logger().warning('Ungültige Messung')
 
     def get_distance(self):
         """
@@ -123,36 +143,37 @@ class UltrasonicSensorNode(Node):
             float or None: The measured distance in meters if within the valid range,
             or None if a timeout occurs or the measurement is out of range.
         """
-        # Trigger senden
-        GPIO.output(TRIG_PIN, True)
+        if not GPIO_AVAILABLE:
+            return None
+
+        # Trigger pulse
+        self._gpio_request.set_value(TRIG_PIN, Value.ACTIVE)
         time.sleep(0.00001)
-        GPIO.output(TRIG_PIN, False)
+        self._gpio_request.set_value(TRIG_PIN, Value.INACTIVE)
 
         start_time = time.time()
         stop_time = time.time()
 
-        # Warte auf Echo Start
+        # Wait for echo start
         timeout_start = time.time()
-        while GPIO.input(ECHO_PIN) == 0:
+        while self._gpio_request.get_value(ECHO_PIN) == Value.INACTIVE:
             start_time = time.time()
             if time.time() - timeout_start > 0.02:
-                return None  # Timeout
+                return None
 
-        # Warte auf Echo Ende
+        # Wait for echo end
         timeout_start = time.time()
-        while GPIO.input(ECHO_PIN) == 1:
+        while self._gpio_request.get_value(ECHO_PIN) == Value.ACTIVE:
             stop_time = time.time()
             if time.time() - timeout_start > 0.02:
-                return None  # Timeout
+                return None
 
-        # Dauer und Distanz berechnen
         elapsed = stop_time - start_time
-        distance = (elapsed * 343.0) / 2  # in Metern
+        distance = (elapsed * 343.0) / 2
 
         if 0.02 < distance < 4.0:
             return distance
-        else:
-            return None
+        return None
 
     def destroy_node(self):
         """Destroys the node and cleans up GPIO resources.
@@ -160,7 +181,8 @@ class UltrasonicSensorNode(Node):
         This method cleans up the GPIO to prevent resource leaks and then calls the superclass's
         destroy_node method to complete the remaining shutdown procedures.
         """
-        GPIO.cleanup()
+        if self._gpio_request is not None:
+            self._gpio_request.release()
         super().destroy_node()
 
 
