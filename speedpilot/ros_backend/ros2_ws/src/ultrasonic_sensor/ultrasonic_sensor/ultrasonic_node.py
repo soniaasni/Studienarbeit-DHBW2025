@@ -51,8 +51,8 @@ except (ImportError, FileNotFoundError, OSError):
     GPIO_AVAILABLE = False
 
 
-TRIG_PIN = 11  # trigger (green cable)
-ECHO_PIN = 9   # echo (blue cable)
+TRIG_PIN = 7   # trigger (GPIO 7, physical pin 26, green cable)
+ECHO_PIN = 21  # echo (GPIO 21, physical pin 40)
 
 
 class UltrasonicSensorNode(Node):
