@@ -94,6 +94,7 @@ class UltrasonicSensorNode(Node):
         super().__init__('ultrasonic_sensor_node')
         self.publisher_ = self.create_publisher(Float32, '/ultrasonic/distance', 10)
         self.timer = self.create_timer(0.2, self.read_and_publish)
+        self._invalid_count = 0
 
         if GPIO_AVAILABLE:
             self._gpio_request = gpiod.request_lines(
@@ -123,13 +124,17 @@ class UltrasonicSensorNode(Node):
         """
         distance = self.get_distance()
         if distance is not None:
+            self._invalid_count = 0
             msg = Float32()
             msg.data = distance
             self.publisher_.publish(msg)
             self.get_logger().info(f'Distanz: {distance:.2f} m')
-        else:
-            if GPIO_AVAILABLE:
-                self.get_logger().warning('Ungültige Messung')
+        elif GPIO_AVAILABLE:
+            self._invalid_count += 1
+            if self._invalid_count % 10 == 1:
+                self.get_logger().warning(
+                    f'Ungültige Messung (#{self._invalid_count}) — '
+                    'run with --log-level DEBUG for details')
 
     def get_distance(self):
         """
@@ -146,26 +151,32 @@ class UltrasonicSensorNode(Node):
         if not GPIO_AVAILABLE:
             return None
 
-        # Trigger pulse
+        # Ensure trigger is low before pulse
+        self._gpio_request.set_value(TRIG_PIN, Value.INACTIVE)
+        time.sleep(0.000002)
+
+        # Trigger pulse (15µs for reliable detection)
         self._gpio_request.set_value(TRIG_PIN, Value.ACTIVE)
-        time.sleep(0.00001)
+        time.sleep(0.000015)
         self._gpio_request.set_value(TRIG_PIN, Value.INACTIVE)
 
         start_time = time.time()
-        stop_time = time.time()
+        stop_time = start_time
 
-        # Wait for echo start
+        # Wait for echo HIGH (timeout 50ms)
         timeout_start = time.time()
         while self._gpio_request.get_value(ECHO_PIN) == Value.INACTIVE:
             start_time = time.time()
-            if time.time() - timeout_start > 0.02:
+            if start_time - timeout_start > 0.05:
+                self.get_logger().debug('Ultrasonic: timeout waiting for echo HIGH')
                 return None
 
-        # Wait for echo end
+        # Wait for echo LOW (timeout 50ms)
         timeout_start = time.time()
         while self._gpio_request.get_value(ECHO_PIN) == Value.ACTIVE:
             stop_time = time.time()
-            if time.time() - timeout_start > 0.02:
+            if stop_time - timeout_start > 0.05:
+                self.get_logger().debug('Ultrasonic: timeout waiting for echo LOW')
                 return None
 
         elapsed = stop_time - start_time
@@ -173,6 +184,7 @@ class UltrasonicSensorNode(Node):
 
         if 0.02 < distance < 4.0:
             return distance
+        self.get_logger().debug(f'Ultrasonic: distance out of range: {distance:.3f} m')
         return None
 
     def destroy_node(self):
