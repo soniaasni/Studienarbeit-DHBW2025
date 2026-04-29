@@ -240,7 +240,7 @@ class ROSBridge(Node):
                     msg.speed = float(data['speed'])
                     msg.angle = float(data['angle'])
                     self.cmd_publisher.publish(msg)
-                    self.get_logger().info(
+                    self.get_logger().debug(
                         f'Published command: command={msg.command} speed={msg.speed}, angle={msg.angle}'
                     )
                 else:
@@ -253,7 +253,7 @@ class ROSBridge(Node):
                 msg.speed = 0.0
                 msg.angle = 0.0
                 self.cmd_publisher.publish(msg)
-                self.get_logger().info('Stop command issued.')
+                self.get_logger().debug('Stop command issued.')
             else:
                 self.get_logger().warning(f'Unknown command type: {cmd}')
         except Exception as e:

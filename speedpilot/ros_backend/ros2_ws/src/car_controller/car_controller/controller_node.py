@@ -232,7 +232,7 @@ class CarController(Node):
             - If msg.speed equals zero, logs that no movement command was received.
             - Uses the angle value from msg to set the vehicle's steering via set_steering.
         """
-        self.get_logger().info(
+        self.get_logger().debug(
             f'Received command: command={msg.command}, speed={msg.speed}, angle={msg.angle}'
         )
         if msg.speed > 0:
@@ -243,7 +243,7 @@ class CarController(Node):
             if GPIO_AVAILABLE:
                 self.motor_forward.ChangeDutyCycle(0)
                 self.motor_backward.ChangeDutyCycle(0)
-            self.get_logger().info('No movement command received (speed is zero).')
+            self.get_logger().debug('No movement command received (speed is zero).')
 
         # Use the angle field for steering
         self.set_steering(msg.angle)
@@ -260,7 +260,7 @@ class CarController(Node):
         forward motion is blocked and a warning is logged.
         """
         if not GPIO_AVAILABLE:
-            self.get_logger().info(f'Simulation: Driving forward at speed {speed}')
+            self.get_logger().debug(f'Simulation: Driving forward at speed {speed}')
             return
         if USE_ULTRASONIC and self.ultrasonic_distance < ULTRASONIC_MIN_DISTANCE:
             if GPIO_AVAILABLE:
@@ -274,7 +274,7 @@ class CarController(Node):
         pwm_speed = min(max(speed * 100, 0), 100)
         self.motor_forward.ChangeDutyCycle(pwm_speed)
         self.motor_backward.ChangeDutyCycle(0)
-        self.get_logger().info(f'PWM: Driving forward at speed {pwm_speed}%')
+        self.get_logger().debug(f'PWM: Driving forward at speed {pwm_speed}%')
 
     def drive_backward(self, speed):
         """
@@ -291,12 +291,12 @@ class CarController(Node):
             None
         """
         if not GPIO_AVAILABLE:
-            self.get_logger().info(f'Simulation: Driving backward at speed {speed}')
+            self.get_logger().debug(f'Simulation: Driving backward at speed {speed}')
             return
         pwm_speed = min(max(speed * 100, 0), 100)
         self.motor_forward.ChangeDutyCycle(0)
         self.motor_backward.ChangeDutyCycle(pwm_speed)
-        self.get_logger().info(f'PWM: Driving backward at speed {pwm_speed}%')
+        self.get_logger().debug(f'PWM: Driving backward at speed {pwm_speed}%')
 
     def set_steering(self, angle):
         """
@@ -323,7 +323,7 @@ class CarController(Node):
 
         if GPIO_AVAILABLE:
             self.motor_steering.ChangeDutyCycle(duty_cycle)
-        self.get_logger().info(f'PWM: Steering with angle {angle}, duty_cycle {duty_cycle}')
+        self.get_logger().debug(f'PWM: Steering with angle {angle}, duty_cycle {duty_cycle}')
 
 
 def main(args=None):
