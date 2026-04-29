@@ -9,8 +9,10 @@ Publishes to:
   - vehicle_command      (forwarded to the car controller)
 
 Forward commands are passed through unchanged unless an obstacle is
-detected within SAFETY_DISTANCE in the front sector. In that case the
-speed is clamped to 0 so the car stops before hitting the obstacle.
+detected within SAFETY_DISTANCE in the front sector. In that case speed
+is clamped to 0. Critically, the stop is published directly from the
+scan callback so it fires at LiDAR rate (~5 Hz) without waiting for the
+next user command — this makes stopping as fast as possible.
 Steering and backward motion are always passed through unmodified.
 """
 
@@ -22,7 +24,7 @@ from sensor_msgs.msg import LaserScan
 
 from custom_msgs.msg import VehicleCommand
 
-SAFETY_DISTANCE = 0.5      # metres — stop if closer than this
+SAFETY_DISTANCE = 1.0      # metres — stop if obstacle is closer than this
 FRONT_HALF_ANGLE_DEG = 30  # ±30 ° around the front of the car
 
 
@@ -32,6 +34,8 @@ class SafetyStopNode(Node):
         super().__init__('safety_stop')
 
         self._front_clear = True
+        self._last_angle = 0.0    # keep steering position when stopping
+        self._last_command = ''
 
         self.create_subscription(LaserScan, 'scan', self._scan_cb, 10)
         self.create_subscription(VehicleCommand, 'vehicle_command_raw', self._cmd_cb, 10)
@@ -65,14 +69,26 @@ class SafetyStopNode(Node):
         was_clear = self._front_clear
         self._front_clear = min_dist > SAFETY_DISTANCE
 
-        if not self._front_clear and was_clear:
-            self.get_logger().warn(
-                f'Obstacle at {min_dist:.2f} m — forward motion blocked'
-            )
-        elif self._front_clear and not was_clear:
+        if not self._front_clear:
+            if was_clear:
+                self.get_logger().warn(
+                    f'Obstacle at {min_dist:.2f} m — emergency stop!'
+                )
+            # Publish stop immediately at LiDAR scan rate so the car doesn't
+            # have to wait for the next user command to receive speed=0.
+            stop = VehicleCommand()
+            stop.command = self._last_command
+            stop.speed = 0.0
+            stop.angle = self._last_angle
+            self._pub.publish(stop)
+
+        elif not was_clear:
             self.get_logger().info('Path clear — forward motion allowed')
 
     def _cmd_cb(self, msg: VehicleCommand):
+        self._last_angle = msg.angle
+        self._last_command = msg.command
+
         out = VehicleCommand()
         out.command = msg.command
         out.angle = msg.angle
