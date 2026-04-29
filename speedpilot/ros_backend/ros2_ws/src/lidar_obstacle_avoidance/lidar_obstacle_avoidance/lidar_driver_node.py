@@ -20,6 +20,7 @@ except ImportError:
 
 LIDAR_PORT = '/dev/ttyUSB0'
 LIDAR_BAUDRATE = 115200
+LIDAR_TIMEOUT = 3      # seconds — default 1 s causes false timeouts
 NUM_BINS = 360
 
 # Serial port attribute names to probe (varies by rplidar library version)
@@ -50,48 +51,58 @@ class LidarDriverNode(Node):
         self._thread.start()
         self.get_logger().info(f'LiDAR driver started on {LIDAR_PORT}')
 
+    def _flush(self, serial_port, label=''):
+        if serial_port is None:
+            return
+        n = serial_port.in_waiting
+        serial_port.reset_input_buffer()
+        self.get_logger().debug(f'Flushed {n} bytes [{label}]')
+
     def _scan_loop(self):
         attempt = 0
         while self._running and rclpy.ok():
             attempt += 1
             self.get_logger().debug(f'Connection attempt #{attempt}')
             try:
-                self._lidar = RPLidar(LIDAR_PORT, baudrate=LIDAR_BAUDRATE)
+                # timeout=3 gives the device more time to respond to commands
+                self._lidar = RPLidar(LIDAR_PORT, baudrate=LIDAR_BAUDRATE, timeout=LIDAR_TIMEOUT)
 
                 attr_name, serial_port = _get_serial(self._lidar)
-                if serial_port is not None:
-                    self.get_logger().debug(f'Serial attr: {attr_name} — flushing immediately after open')
-                    serial_port.reset_input_buffer()
-                else:
-                    self.get_logger().warn('No serial port attribute found — cannot flush RX buffer')
+                self.get_logger().debug(
+                    f'Serial attr: {attr_name}' if serial_port else 'No serial attr found'
+                )
 
-                # Stop any ongoing scan/motor so the device goes quiet
+                # Flush immediately: opening the port toggles DTR which may start the motor
+                self._flush(serial_port, 'post-open')
+
+                # Stop scan + motor, wait for full spindown, flush residue
                 self._lidar.stop()
                 self._lidar.stop_motor()
-                self.get_logger().debug('Sent stop commands, waiting 3 s for motor spindown')
+                self.get_logger().debug('Motor stopped — waiting 3 s for spindown')
                 time.sleep(3.0)
+                self._flush(serial_port, 'post-spindown')
 
-                if serial_port is not None:
-                    n = serial_port.in_waiting
-                    self.get_logger().debug(f'Bytes in buffer after spindown: {n} — flushing')
-                    serial_port.reset_input_buffer()
+                # Communication check: get_info() uses a simple request/response pair
+                info = self._lidar.get_info()
+                self.get_logger().info(
+                    f'Device: model={info.get("model")}, '
+                    f'firmware={info.get("firmware")}, hardware={info.get("hardware")}'
+                )
+                self._flush(serial_port, 'post-get_info')
 
-                # Basic communication check: get_info() sends one command and reads a
-                # deterministic response, syncing the parser to a clean packet boundary.
-                try:
-                    info = self._lidar.get_info()
-                    self.get_logger().info(
-                        f'LiDAR device: model={info.get("model")}, '
-                        f'firmware={info.get("firmware")}, hardware={info.get("hardware")}'
-                    )
-                except RPLidarException as e:
-                    self.get_logger().warn(f'get_info() failed: {e} — baud rate mismatch?')
-                    raise
+                # Health check: iter_scans() calls this internally, but calling it here
+                # first syncs the protocol and lets us log the result
+                status, err_code = self._lidar.get_health()
+                self.get_logger().info(f'Health: {status}, err_code={err_code}')
+                self._flush(serial_port, 'post-get_health')
 
                 # Start motor and wait for operating speed
                 self._lidar.start_motor()
-                self.get_logger().debug('Motor started, waiting 2 s for spinup')
+                self.get_logger().debug('Motor started — waiting 2 s for spinup')
                 time.sleep(2.0)
+
+                # Final flush: motor spinup may generate spurious bytes
+                self._flush(serial_port, 'pre-scan')
 
                 self.get_logger().info('LiDAR connected — starting scan')
                 for scan in self._lidar.iter_scans():
