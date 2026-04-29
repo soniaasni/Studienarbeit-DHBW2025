@@ -43,15 +43,20 @@ class LidarDriverNode(Node):
         while self._running and rclpy.ok():
             try:
                 self._lidar = RPLidar(LIDAR_PORT, baudrate=LIDAR_BAUDRATE)
-                # reset() stops the motor, resets device firmware, and sleeps 2 s internally.
-                # This is the only reliable way to clear all stale scan bytes before we read
-                # the descriptor, because stop() alone doesn't stop the motor fast enough.
-                self._lidar.reset()
-                # Flush any boot-message bytes the device sends after reset
-                time.sleep(0.2)
+                # Flush immediately after open: opening the port raises DTR which starts the
+                # motor, and scan bytes arrive before any stop/reset command takes effect.
                 serial_port = getattr(self._lidar, '_serial', None)
                 if serial_port is not None:
                     serial_port.reset_input_buffer()
+                # Now stop the scan and motor, wait for full spindown, flush residue
+                self._lidar.stop()
+                self._lidar.stop_motor()
+                time.sleep(3.0)
+                if serial_port is not None:
+                    serial_port.reset_input_buffer()
+                # Restart motor and wait for it to reach operating speed
+                self._lidar.start_motor()
+                time.sleep(2.0)
                 self.get_logger().info('LiDAR connected')
                 for scan in self._lidar.iter_scans():
                     if not self._running or not rclpy.ok():
