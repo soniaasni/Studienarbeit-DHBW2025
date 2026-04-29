@@ -20,10 +20,13 @@ def generate_launch_description():
         LaunchDescription: An object containing the launch information for the defined nodes.
     """
     return LaunchDescription([
+        # Bridge publishes raw user commands to vehicle_command_raw.
+        # safety_stop_node filters them and republishes to vehicle_command.
         Node(
             package='ros2_bridge',
             executable='bridge_node',
             name='ros2_bridge',
+            remappings=[('vehicle_command', 'vehicle_command_raw')],
             output='screen'
         ),
         Node(
@@ -40,10 +43,17 @@ def generate_launch_description():
         ),
         Node(
             package='lidar_obstacle_avoidance',
-            executable='obstacle_avoidance_node',
-            name='obstacle_avoidance',
+            executable='safety_stop_node',
+            name='safety_stop',
             output='screen'
-        )
+        ),
+        # Obstacle avoidance (auto-pilot) disabled — safety_stop_node handles manual driving
+        # Node(
+        #     package='lidar_obstacle_avoidance',
+        #     executable='obstacle_avoidance_node',
+        #     name='obstacle_avoidance',
+        #     output='screen'
+        # ),
         # ultrasonic_sensor temporarily disabled — replaced by LiDAR
         # Node(
         #     package='ultrasonic_sensor',
