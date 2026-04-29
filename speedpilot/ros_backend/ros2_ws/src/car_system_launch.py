@@ -34,16 +34,23 @@ def generate_launch_description():
         ),
         Node(
             package='lidar_obstacle_avoidance',
-            executable='obstacle_avoidance_node',
-            name='obstacle_avoidance',
+            executable='lidar_driver_node',
+            name='lidar_driver',
             output='screen'
         ),
         Node(
-            package='ultrasonic_sensor',
-            executable='ultrasonic_node',
-            name='ultrasonic_sensor',
+            package='lidar_obstacle_avoidance',
+            executable='obstacle_avoidance_node',
+            name='obstacle_avoidance',
             output='screen'
         )
+        # ultrasonic_sensor temporarily disabled — replaced by LiDAR
+        # Node(
+        #     package='ultrasonic_sensor',
+        #     executable='ultrasonic_node',
+        #     name='ultrasonic_sensor',
+        #     output='screen'
+        # )
     ])
 
 
