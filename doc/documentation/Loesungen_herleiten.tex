@@ -134,6 +134,15 @@ Ein weiterer entscheidender Vorteil der Gaußschen Glockenkurve ergibt sich durc
 Durch diese rekursive Überlagerung entsteht eine adaptive Fahrtenkurve, die sich flexibel an nahezu jede Umgebung anpassen kann. Unter der Voraussetzung ausreichender Parameteranpassung ist es damit theoretisch möglich, um jeden Gegenstand herumzufahren.
 \newpage
 
+\subsubsection*{Bézierkurve}
+Die Bézierkurve ist definiert durch
+\[
+\mathbf{B}(t) = \sum_{i=0}^{n} \binom{n}{i} (1 - t)^{n-i} t^{i} \mathbf{P}_i,
+\quad t \in [0,1]
+\]
+sie ist eine glatte, parametrische Kurve, die durch Kontrollpunkte beschrieben wird. Sie beginnt im ersten und endet im letzten Punkt, während die übrigen Punkte den Verlauf beeinflussen. Mit wenigen Kontrollpunkten ist sie leicht zu berechnen, stabil und gut kontrollierbar. Bei vielen Kontrollpunkten steigt jedoch der Polynomgrad, was den Rechenaufwand erhöht, zu numerischen Problemen führen kann und die lokale Kontrolle verschlechtert, da Änderungen an einem Punkt die gesamte Kurve beeinflussen. Deshalb verwendet man in der Praxis bei komplexen Formen meist mehrere Bézierkurven niedrigen Grades oder alternative Kurven wie Splines.
+\\
+TODO!!! abbildung hinzufügen
 \subsubsection*{Fazit}
 Zusammenfassend lässt sich sagen, dass die Gaußsche Glockenkurve aufgrund ihrer symmetrischen Form, der lokalen Begrenzung und der sanften Krümmung die beste Wahl für die Umfahrung von Gegenständen darstellt. Parabeln können in bestimmten Situationen nützlich sein, bieten jedoch nicht die notwendige Flexibilität und Kontrolle. Exponentialfunktionen sind für diesen Anwendungsfall weniger geeignet, da sie zu einseitig und abrupt reagieren. Die Möglichkeit der rekursiven Anwendung der Gaußschen Glockenkurve ermöglicht es zudem, komplexe Hindernisformationen effektiv zu bewältigen, was sie zur optimalen Lösung für die Fahrbahnplanung bei der Umfahrung von Gegenständen macht.
 Damit ein optimales Fahrverhalten erreicht wird, sollten die Parameter der Gaußschen Glockenkurve sorgfältig angepasst werden, um eine harmonische und sichere Umfahrung zu gewährleisten. Dabei ist wichtig zu beachten, dass die  Wahl der kurvensteigung nicht über den maximalen Lenkeinschlag hinausgehen darf, um die Fahrstabilität zu gewährleisten. Insgesamt bietet die Gaußsche Glockenkurve eine robuste und flexible Grundlage für die Entwicklung von Algorithmen zur Hindernisumfahrung in autonomen Fahrsystemen.
@@ -143,4 +152,5 @@ Die Berechnung des Lenkwinkels für die Umfahrung eines Gegenstandes basiert auf
 \[\delta(x) = \arctan\left(\frac{df}{dx}\right).\]
 Hierbei ist \(\frac{df}{dx}\) die erste Ableitung der Fahrbahnfunktion, die die Steigung der Kurve an einem bestimmten Punkt \(x\) angibt. Der Lenkwinkel \(\delta\) wird in Radiant oder Grad angegeben und gibt an, wie stark das Fahrzeug in diesem Moment lenken muss, um der Fahrbahn zu folgen.
 Die Berechnung des Lenkwinkels ist entscheidend für die Steuerung des Fahrzeugs und die Gewährleistung einer sicheren Umfahrung des Gegenstandes. Es ist wichtig, dass der berechnete Lenkwinkel innerhalb der mechanischen Grenzen des Fahrzeugs liegt, um eine Übersteuerung oder Untersteuerung zu vermeiden. Zudem sollte die Berechnung in Echtzeit erfolgen, um auf dynamische Veränderungen in der Umgebung reagieren zu können. Die Implementierung dieser Berechnung erfordert eine genaue Modellierung der Fahrzeugdynamik und eine präzise Erfassung der Fahrbahnkurve, um eine effektive und sichere Umfahrung zu gewährleisten.
+TODO!!! Lenkwinkel berechnen ohne dass Reifen mit Fahrzeuggehäuse kollidieren
 \end{document}
