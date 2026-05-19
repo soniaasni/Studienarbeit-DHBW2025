@@ -20,6 +20,7 @@
 *.gls
 *.glsdefs
 *.ist
+doc/documentation/out/*
 
 # ROS2 build artifacts (Linux binaries — built inside Docker, not on Windows)
 speedpilot/ros_backend/ros2_ws/install/
