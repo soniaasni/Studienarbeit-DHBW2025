@@ -36,15 +36,26 @@ STEERING_OFFSET = -0.2  # Applied to neutral, min, and max duty cycles for fine 
 import threading
 import time
 
+import gpiod
+from gpiod.line import Direction, Value
+import glob
+
+GPIO_AVAILABLE = False
+GPIO_CHIP: str | None = None
+
 try:
-    import gpiod
-    from gpiod.line import Direction, Value
-    with gpiod.Chip("/dev/gpiochip4"):
-        pass
-    GPIO_AVAILABLE = True
-except (ImportError, FileNotFoundError, OSError):
-    gpiod = None
+    # Find any gpiochip that contains GPIO17 (or any pin you use)
+    for chip_path in glob.glob("/dev/gpiochip*"):
+        chip = gpiod.Chip(chip_path)
+        info = chip.get_info()
+        # Broadcom GPIO controller always has > 28 lines
+        if info.num_lines >= 28:
+            GPIO_AVAILABLE = True
+            GPIO_CHIP = chip_path
+            break
+except Exception:
     GPIO_AVAILABLE = False
+
 
 
 class SoftwarePWM:
@@ -154,14 +165,14 @@ class CarController(Node):
         - Logs that the CarController node has started.
         """
         super().__init__('car_controller')
-        if GPIO_AVAILABLE:
+        if GPIO_AVAILABLE and GPIO_CHIP:
             self.motor_forward_pin = 24
             self.motor_backward_pin = 25
             self.motor_steering_pin = 23
             self._led_pin = 20
 
             self._gpio_request = gpiod.request_lines(
-                "/dev/gpiochip4",
+                GPIO_CHIP,
                 consumer="car_controller",
                 config={
                     self.motor_forward_pin: gpiod.LineSettings(

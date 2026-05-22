@@ -39,15 +39,24 @@ from rclpy.node import Node
 
 from std_msgs.msg import Float32
 
+import gpiod
+from gpiod.line import Direction, Value
+import glob
+
+GPIO_AVAILABLE = False
+GPIO_CHIP: str | None = None
 
 try:
-    import gpiod
-    from gpiod.line import Direction, Value
-    with gpiod.Chip("/dev/gpiochip4"):
-        pass
-    GPIO_AVAILABLE = True
-except (ImportError, FileNotFoundError, OSError):
-    gpiod = None
+    # Find any gpiochip that contains GPIO17 (or any pin you use)
+    for chip_path in glob.glob("/dev/gpiochip*"):
+        chip = gpiod.Chip(chip_path)
+        info = chip.get_info()
+        # Broadcom GPIO controller always has > 28 lines
+        if info.num_lines >= 28:
+            GPIO_AVAILABLE = True
+            GPIO_CHIP = chip_path
+            break
+except Exception:
     GPIO_AVAILABLE = False
 
 
@@ -99,7 +108,7 @@ class UltrasonicSensorNode(Node):
 
         if GPIO_AVAILABLE:
             self._gpio_request = gpiod.request_lines(
-                "/dev/gpiochip4",
+                GPIO_CHIP,
                 consumer="ultrasonic_sensor",
                 config={
                     TRIG_PIN: gpiod.LineSettings(
