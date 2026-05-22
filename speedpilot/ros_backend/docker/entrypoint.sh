@@ -21,6 +21,9 @@ chmod 700 $XDG_RUNTIME_DIR
 echo "[ENTRYPOINT] Baue ROS2 Workspace (incremental, mit symlink-install)…"
 cd "$ROS_WS"
 
+source /opt/ros/$ROS_DISTRO/setup.bash
+
+
 rosdep update
 rosdep install \
     --from-path src \
