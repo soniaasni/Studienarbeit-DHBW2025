@@ -40,11 +40,14 @@ SHELL ["/bin/bash", "-c"]
 RUN apt-get update -q && \
     apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
-    wget curl git python3-pip python3-rosdep \
-    python3-argcomplete python3-colcon-common-extensions \
-    python3-networkx python3-vcstool libserial-dev && \
-    python3 -m pip install --no-cache-dir websocket-server protobuf gpiod && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+    apt-get install -y --no-install-recommends \
+    wget curl git build-essential cmake python3-pip python3-rosdep \
+    python3-argcomplete python3-colcon-common-extensions python3-networkx python3-vcstool \
+    ros-$ROS_DISTRO-ament-cmake \
+    ros-$ROS_DISTRO-rosidl-default-generators \
+    ros-$ROS_DISTRO-rosidl-default-runtime \
+    libserial-dev
+
 
 # Kopiere gebaute Artefakte und Source vom Builder
 COPY --from=builder /root/ros2_ws/install /root/ros2_ws/install
