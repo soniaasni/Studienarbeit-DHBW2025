@@ -16,44 +16,28 @@ mkdir -p $XDG_RUNTIME_DIR
 chmod 700 $XDG_RUNTIME_DIR
 
 # -----------------------------
-# ROS_DOMAIN_ID Handling
+# Build Workspace (immer, aber schnell dank Incremental Build)
 # -----------------------------
-mkdir -p "$SHARED_ROS2"
+echo "[ENTRYPOINT] Baue ROS2 Workspace (incremental, mit symlink-install)…"
+cd "$ROS_WS"
 
-if [ ! -f "$ROS_DOMAIN_ID_FILE" ]; then
-    echo "0" > "$ROS_DOMAIN_ID_FILE"
-fi
+rosdep update
+rosdep install \
+    --from-path src \
+    --ignore-src \
+    --rosdistro "$ROS_DISTRO" \
+    -y \
+    --skip-keys "actionlib catkin message_generation rviz rosparam_shortcuts"
 
-export ROS_DOMAIN_ID=$(cat "$ROS_DOMAIN_ID_FILE")
+colcon build \
+    --symlink-install \
+    --packages-select \
+    ros2_bridge \
+    car_controller \
+    lidar_obstacle_avoidance \
+    ultrasonic_sensor \
+    custom_msgs
 
-source /opt/ros/$ROS_DISTRO/setup.bash
-
-
-# -----------------------------
-# Build Workspace (nur falls nötig)
-# -----------------------------
-if [ ! -f "$ROS_WS/install/setup.bash" ]; then
-    echo "[ENTRYPOINT] ROS2 Workspace nicht gebaut, starte Build…"
-    cd "$ROS_WS"
-
-    rosdep update
-    rosdep install \
-        --from-path src \
-        --ignore-src \
-        --rosdistro "$ROS_DISTRO" \
-        -y \
-        --skip-keys "actionlib catkin message_generation rviz rosparam_shortcuts"
-
-    colcon build \
-        --packages-select \
-        ros2_bridge \
-        car_controller \
-        lidar_obstacle_avoidance \
-        ultrasonic_sensor \
-        custom_msgs
-
-    rm -rf build log
-fi
 
 # Strip CRLF from all text/script files in install (handles Windows volume mounts)
 find "$ROS_WS/install" -type f \( -name "*.bash" -o -name "*.sh" -o -name "*.py" -o -name "*.dsv" -o -name "*.xml" \) \
