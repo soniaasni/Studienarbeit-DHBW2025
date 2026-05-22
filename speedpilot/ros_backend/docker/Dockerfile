@@ -47,7 +47,9 @@ RUN apt-get update -q && \
     ros-$ROS_DISTRO-ament-cmake \
     ros-$ROS_DISTRO-rosidl-default-generators \
     ros-$ROS_DISTRO-rosidl-default-runtime \
-    libserial-dev
+    libserial-dev \
+    python3-libgpiod && \
+    python3 -m pip install --no-cache-dir websocket-server protobuf gpiod
 
 
 # Kopiere gebaute Artefakte und Source vom Builder
