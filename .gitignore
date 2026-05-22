@@ -63,3 +63,10 @@ build/
 .buildlog/
 .history
 .svn/
+
+# iOS specific files to ignore
+speedpilot/frontend/ios/Runner.xcodeproj/xcshareddata/xcschemes/Runner.xcscheme
+speedpilot/frontend/ios/Runner.xcodeproj/xcshareddata/xcschemes/Runner.xcscheme
+speedpilot/frontend/ios/Runner.xcodeproj/project.pbxproj
+speedpilot/frontend/ios/Runner/Info.plist
+speedpilot/frontend/ios/Runner/AppDelegate.swift

@@ -53,7 +53,10 @@ try:
             GPIO_AVAILABLE = True
             GPIO_CHIP = chip_path
             break
-except Exception:
+except Exception as e:
+    import traceback
+    print("GPIO detection failed:", e)
+    traceback.print_exc()
     GPIO_AVAILABLE = False
 
 
