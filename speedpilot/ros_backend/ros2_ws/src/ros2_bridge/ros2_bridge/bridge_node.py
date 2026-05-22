@@ -44,6 +44,7 @@ import glob
 
 GPIO_AVAILABLE = False
 GPIO_CHIP: str | None = None
+ERROR_MESSAGE: str = ""
 
 try:
     # Find any gpiochip that contains GPIO17 (or any pin you use)
@@ -56,9 +57,7 @@ try:
             GPIO_CHIP = chip_path
             break
 except Exception as e:
-    import traceback
-    print("GPIO detection failed:", e)
-    traceback.print_exc()
+    ERROR_MESSAGE = str(e)
     GPIO_AVAILABLE = False
 
 
@@ -135,6 +134,7 @@ class ROSBridge(Node):
             self._gpio_request.set_value(16, Value.ACTIVE)
         else:
             self.get_logger().warn("gpiod not available, running in simulation mode. GPIO operations will be skipped.")
+            self.get_logger().warn(f"GPIO initialization error: {ERROR_MESSAGE}")
             self._gpio_request = None
         self.cmd_publisher = self.create_publisher(VehicleCommand, 'vehicle_command', 10)
         self.get_logger().info('Starting WebSocket server...')
