@@ -40,7 +40,6 @@ SHELL ["/bin/bash", "-c"]
 RUN apt-get update -q && \
     apt-get upgrade -y && \
     apt-get install -y --no-install-recommends \
-    apt-get install -y --no-install-recommends \
     wget curl git build-essential cmake python3-pip python3-rosdep \
     python3-argcomplete python3-colcon-common-extensions python3-networkx python3-vcstool \
     ros-$ROS_DISTRO-ament-cmake \
