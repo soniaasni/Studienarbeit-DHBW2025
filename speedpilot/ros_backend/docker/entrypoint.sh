@@ -24,14 +24,6 @@ cd "$ROS_WS"
 source /opt/ros/$ROS_DISTRO/setup.bash
 
 
-rosdep update
-rosdep install \
-    --from-path src \
-    --ignore-src \
-    --rosdistro "$ROS_DISTRO" \
-    -y \
-    --skip-keys "actionlib catkin message_generation rviz rosparam_shortcuts"
-
 colcon build \
     --symlink-install \
     --packages-select \
