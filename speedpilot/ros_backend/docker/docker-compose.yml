@@ -20,7 +20,7 @@ services:
       - /dev/gpiochip3
       - /dev/gpiochip4
     volumes:
-      - ../ros2_ws:/root/ros2_ws
+      - ../ros2_ws/src:/root/ros2_ws/src
     restart: unless-stopped
     command: >
       bash -c "
