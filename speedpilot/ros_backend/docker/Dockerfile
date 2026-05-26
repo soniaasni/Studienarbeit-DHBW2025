@@ -32,7 +32,7 @@ RUN source /opt/ros/jazzy/setup.bash && \
 # Stage 2: Runtime (minimal)
 FROM ros:jazzy
 ENV ROS_DISTRO=jazzy
-ENV PYTHONUNBUFFERED=1
+
 
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
 ENV DEBIAN_FRONTEND=noninteractive

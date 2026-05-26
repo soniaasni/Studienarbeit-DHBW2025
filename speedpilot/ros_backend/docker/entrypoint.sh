@@ -18,7 +18,7 @@ chmod 700 $XDG_RUNTIME_DIR
 # -----------------------------
 # Build Workspace (immer, aber schnell dank Incremental Build)
 # -----------------------------
-echo "[ENTRYPOINT] Baue ROS2 Workspace (incremental)…"
+echo "[ENTRYPOINT] Baue ROS2 Workspace (incremental, mit symlink-install)…"
 cd "$ROS_WS"
 
 source /opt/ros/$ROS_DISTRO/setup.bash
@@ -33,6 +33,7 @@ rosdep install \
     --skip-keys "actionlib catkin message_generation rviz rosparam_shortcuts"
 
 colcon build \
+    --symlink-install \
     --packages-select \
     ros2_bridge \
     car_controller \
