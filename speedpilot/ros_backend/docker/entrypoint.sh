@@ -16,16 +16,22 @@ mkdir -p $XDG_RUNTIME_DIR
 chmod 700 $XDG_RUNTIME_DIR
 
 # -----------------------------
-# Setup Workspace & Offline Build
+# Build Workspace (immer, aber schnell dank Incremental Build)
 # -----------------------------
-echo "[ENTRYPOINT] Sourcing ROS2 Workspace und baue inkrementell…"
+echo "[ENTRYPOINT] Baue ROS2 Workspace (incremental, mit symlink-install)…"
 cd "$ROS_WS"
 
 source /opt/ros/$ROS_DISTRO/setup.bash
 
-# ACHTUNG: Die Befehle 'rosdep update' und 'rosdep install' wurden entfernt, 
-# da sie zwingend Internet (apt-get) brauchen. Die Abhängigkeiten sind bereits im Docker-Image installiert!
-echo "[ENTRYPOINT] Führe colcon build für das Mapping der lokalen Dateien aus..."
+
+rosdep update
+rosdep install \
+    --from-path src \
+    --ignore-src \
+    --rosdistro "$ROS_DISTRO" \
+    -y \
+    --skip-keys "actionlib catkin message_generation rviz rosparam_shortcuts"
+
 colcon build \
     --symlink-install \
     --packages-select \
