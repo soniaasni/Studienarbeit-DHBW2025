@@ -44,7 +44,7 @@ from gpiod.line import Direction, Value
 import glob
 
 GPIO_AVAILABLE = False
-GPIO_CHIP: str | None = None
+GPIO_CHIP = None
 ERROR_MESSAGE: str = ""
 
 try:
@@ -104,6 +104,7 @@ class UltrasonicSensorNode(Node):
         TRIG_PIN starts in a low state. Finally, it logs an informational message indicating that the
         ultrasonic sensor has been initialized.
         """
+        global GPIO_AVAILABLE
         super().__init__('ultrasonic_sensor_node')
         self.publisher_ = self.create_publisher(Float32, '/ultrasonic/distance', 10)
         self.timer = self.create_timer(0.2, self.read_and_publish)
@@ -123,7 +124,6 @@ class UltrasonicSensorNode(Node):
                 self.get_logger().info('Ultraschallsensor initialisiert (GPIO 9/11)')
             except Exception as e:
                 self.get_logger().error(f"Failed to initialize GPIO lines on {GPIO_CHIP}: {e}. Falling back to simulation mode.")
-                global GPIO_AVAILABLE
                 GPIO_AVAILABLE = False
                 self._gpio_request = None
         else:

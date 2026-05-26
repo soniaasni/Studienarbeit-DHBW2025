@@ -43,7 +43,7 @@ from gpiod.line import Direction, Value
 import glob
 
 GPIO_AVAILABLE = False
-GPIO_CHIP: str | None = None
+GPIO_CHIP = None
 ERROR_MESSAGE: str = ""
 
 try:
@@ -121,6 +121,7 @@ class ROSBridge(Node):
 
     def __init__(self):
         """Initialize the ROSBridge node and start the WebSocket server."""
+        global GPIO_AVAILABLE
         super().__init__('ros_bridge')
         if GPIO_AVAILABLE:
             try:
@@ -135,7 +136,6 @@ class ROSBridge(Node):
                 self._gpio_request.set_value(16, Value.ACTIVE)
             except Exception as e:
                 self.get_logger().error(f"Failed to initialize GPIO lines on {GPIO_CHIP}: {e}. Falling back to simulation mode.")
-                global GPIO_AVAILABLE
                 GPIO_AVAILABLE = False
                 self._gpio_request = None
         else:

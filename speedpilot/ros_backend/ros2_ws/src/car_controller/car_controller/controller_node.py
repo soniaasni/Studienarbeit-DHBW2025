@@ -41,7 +41,7 @@ from gpiod.line import Direction, Value
 import glob
 
 GPIO_AVAILABLE = False
-GPIO_CHIP: str | None = None
+GPIO_CHIP = None
 ERROR_MESSAGE: str = ""
 
 try:
@@ -166,6 +166,7 @@ class CarController(Node):
         - Creates a subscription to the 'vehicle_command' topic to handle incoming commands.
         - Logs that the CarController node has started.
         """
+        global GPIO_AVAILABLE
         super().__init__('car_controller')
         if GPIO_AVAILABLE and GPIO_CHIP:
             self.motor_forward_pin = 24
@@ -202,7 +203,6 @@ class CarController(Node):
                 self.motor_steering.start(7.5)
             except Exception as e:
                 self.get_logger().error(f"Failed to initialize GPIO lines on {GPIO_CHIP}: {e}. Falling back to simulation mode.")
-                global GPIO_AVAILABLE
                 GPIO_AVAILABLE = False
                 self._gpio_request = None
                 self.motor_forward = None
