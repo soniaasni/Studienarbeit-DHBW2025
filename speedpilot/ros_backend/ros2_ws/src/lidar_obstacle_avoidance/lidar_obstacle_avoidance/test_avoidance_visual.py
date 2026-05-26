@@ -8,8 +8,11 @@ from gaussian_avoidance import GaussianAvoidanceController
 
 
 OBSTACLES = [
-    (5, 3, 10),
-    (-30, 2, 15),
+    (5, 2, 10),
+    (-10, 3, 15),
+    (20, 3.5, 10),
+    (20, 5.5, 7),
+    (0, 6, 12),
 ]
 
 WORLD_OBSTACLES = []
@@ -61,8 +64,8 @@ def get_visible_obstacles(
     return visible
 
 
-CAR_SPEED = 0.12
-STEPS = 250
+CAR_SPEED = 0.08
+STEPS = 150
 
 car_x = 0.0
 car_y = 0.0
@@ -82,19 +85,32 @@ fig, ax = plt.subplots(figsize=(9, 6))
 
 
 def update(frame):
-    global car_x, car_y
+    global car_x, car_y, history_x, history_y
+
+    # Nach STEPS wieder zurücksetzen
+    if frame % STEPS == 0 and frame != 0:
+        car_x = 0.0
+        car_y = 0.0
+
+        history_x.clear()
+        history_y.clear()
 
     ax.clear()
 
-    visible_obstacles = get_visible_obstacles(car_x, car_y, sensor_range=0.8, sensor_angle=180)
+    visible_obstacles = get_visible_obstacles(
+        car_x,
+        car_y,
+        sensor_range=0.8,
+        sensor_angle=180
+    )
 
     old_car_x = car_x
 
     plan = controller.update(
-    current_y=car_y,
-    visible_obstacles=visible_obstacles,
-    speed=CAR_SPEED,
-)
+        current_y=car_y,
+        visible_obstacles=visible_obstacles,
+        speed=CAR_SPEED,
+    )
 
     car_y = plan.next_y
     car_x += CAR_SPEED
@@ -128,11 +144,12 @@ def update(frame):
         )
 
     ax.set_title(
-    f"Live-Demo | Schritt {frame} | "
-    f"sichtbare Hindernisse: {len(visible_obstacles)} | "
-    f"Lenkwinkel: {plan.steering_angle:.1f}°"
-)
-    ax.set_xlim(-1, 10)
+        f"Live-Demo | Schritt {frame % STEPS} | "
+        f"sichtbare Hindernisse: {len(visible_obstacles)} | "
+        f"Lenkwinkel: {plan.steering_angle:.1f}°"
+    )
+
+    ax.set_xlim(-1, 12)
     ax.set_ylim(-5, 5)
     ax.set_xlabel("x / Vorwärtsrichtung")
     ax.set_ylabel("y / seitliche Position")
@@ -140,7 +157,7 @@ def update(frame):
     ax.legend(loc="upper right")
 
 
-animation = FuncAnimation(fig, update, frames=STEPS, interval=80)
+animation = FuncAnimation(fig, update, frames=None, interval=80)
 
 is_paused = False
 
