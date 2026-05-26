@@ -173,32 +173,41 @@ class CarController(Node):
             self.motor_steering_pin = 23
             self._led_pin = 20
 
-            self._gpio_request = gpiod.request_lines(
-                GPIO_CHIP,
-                consumer="car_controller",
-                config={
-                    self.motor_forward_pin: gpiod.LineSettings(
-                        direction=Direction.OUTPUT, output_value=Value.INACTIVE),
-                    self.motor_backward_pin: gpiod.LineSettings(
-                        direction=Direction.OUTPUT, output_value=Value.INACTIVE),
-                    self.motor_steering_pin: gpiod.LineSettings(
-                        direction=Direction.OUTPUT, output_value=Value.INACTIVE),
-                    self._led_pin: gpiod.LineSettings(
-                        direction=Direction.OUTPUT, output_value=Value.INACTIVE),
-                }
-            )
+            try:
+                self._gpio_request = gpiod.request_lines(
+                    GPIO_CHIP,
+                    consumer="car_controller",
+                    config={
+                        self.motor_forward_pin: gpiod.LineSettings(
+                            direction=Direction.OUTPUT, output_value=Value.INACTIVE),
+                        self.motor_backward_pin: gpiod.LineSettings(
+                            direction=Direction.OUTPUT, output_value=Value.INACTIVE),
+                        self.motor_steering_pin: gpiod.LineSettings(
+                            direction=Direction.OUTPUT, output_value=Value.INACTIVE),
+                        self._led_pin: gpiod.LineSettings(
+                            direction=Direction.OUTPUT, output_value=Value.INACTIVE),
+                    }
+                )
 
-            # LED high = wait mode
-            self._gpio_request.set_value(self._led_pin, Value.ACTIVE)
+                # LED high = wait mode
+                self._gpio_request.set_value(self._led_pin, Value.ACTIVE)
 
-            # Initialize software PWM at 50 Hz
-            self.motor_forward = SoftwarePWM(self._gpio_request, self.motor_forward_pin, 50)
-            self.motor_backward = SoftwarePWM(self._gpio_request, self.motor_backward_pin, 50)
-            self.motor_steering = SoftwarePWM(self._gpio_request, self.motor_steering_pin, 50)
+                # Initialize software PWM at 50 Hz
+                self.motor_forward = SoftwarePWM(self._gpio_request, self.motor_forward_pin, 50)
+                self.motor_backward = SoftwarePWM(self._gpio_request, self.motor_backward_pin, 50)
+                self.motor_steering = SoftwarePWM(self._gpio_request, self.motor_steering_pin, 50)
 
-            self.motor_forward.start(0)
-            self.motor_backward.start(0)
-            self.motor_steering.start(7.5)
+                self.motor_forward.start(0)
+                self.motor_backward.start(0)
+                self.motor_steering.start(7.5)
+            except Exception as e:
+                self.get_logger().error(f"Failed to initialize GPIO lines on {GPIO_CHIP}: {e}. Falling back to simulation mode.")
+                global GPIO_AVAILABLE
+                GPIO_AVAILABLE = False
+                self._gpio_request = None
+                self.motor_forward = None
+                self.motor_backward = None
+                self.motor_steering = None
         else:
             self.get_logger().warn("gpiod not available, running in simulation mode. GPIO operations will be skipped.")
             self.get_logger().warn(f"GPIO initialization error: {ERROR_MESSAGE}")

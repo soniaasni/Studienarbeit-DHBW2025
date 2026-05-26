@@ -123,15 +123,21 @@ class ROSBridge(Node):
         """Initialize the ROSBridge node and start the WebSocket server."""
         super().__init__('ros_bridge')
         if GPIO_AVAILABLE:
-            self._gpio_request = gpiod.request_lines(
-                GPIO_CHIP,
-                consumer="ros_bridge",
-                config={
-                    16: gpiod.LineSettings(
-                        direction=Direction.OUTPUT, output_value=Value.INACTIVE),
-                }
-            )
-            self._gpio_request.set_value(16, Value.ACTIVE)
+            try:
+                self._gpio_request = gpiod.request_lines(
+                    GPIO_CHIP,
+                    consumer="ros_bridge",
+                    config={
+                        16: gpiod.LineSettings(
+                            direction=Direction.OUTPUT, output_value=Value.INACTIVE),
+                    }
+                )
+                self._gpio_request.set_value(16, Value.ACTIVE)
+            except Exception as e:
+                self.get_logger().error(f"Failed to initialize GPIO lines on {GPIO_CHIP}: {e}. Falling back to simulation mode.")
+                global GPIO_AVAILABLE
+                GPIO_AVAILABLE = False
+                self._gpio_request = None
         else:
             self.get_logger().warn("gpiod not available, running in simulation mode. GPIO operations will be skipped.")
             self.get_logger().warn(f"GPIO initialization error: {ERROR_MESSAGE}")

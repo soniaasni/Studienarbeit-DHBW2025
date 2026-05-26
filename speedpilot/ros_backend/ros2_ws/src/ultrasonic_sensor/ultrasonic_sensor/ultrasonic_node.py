@@ -109,17 +109,23 @@ class UltrasonicSensorNode(Node):
         self.timer = self.create_timer(0.2, self.read_and_publish)
 
         if GPIO_AVAILABLE:
-            self._gpio_request = gpiod.request_lines(
-                GPIO_CHIP,
-                consumer="ultrasonic_sensor",
-                config={
-                    TRIG_PIN: gpiod.LineSettings(
-                        direction=Direction.OUTPUT, output_value=Value.INACTIVE),
-                    ECHO_PIN: gpiod.LineSettings(
-                        direction=Direction.INPUT),
-                }
-            )
-            self.get_logger().info('Ultraschallsensor initialisiert (GPIO 9/11)')
+            try:
+                self._gpio_request = gpiod.request_lines(
+                    GPIO_CHIP,
+                    consumer="ultrasonic_sensor",
+                    config={
+                        TRIG_PIN: gpiod.LineSettings(
+                            direction=Direction.OUTPUT, output_value=Value.INACTIVE),
+                        ECHO_PIN: gpiod.LineSettings(
+                            direction=Direction.INPUT),
+                    }
+                )
+                self.get_logger().info('Ultraschallsensor initialisiert (GPIO 9/11)')
+            except Exception as e:
+                self.get_logger().error(f"Failed to initialize GPIO lines on {GPIO_CHIP}: {e}. Falling back to simulation mode.")
+                global GPIO_AVAILABLE
+                GPIO_AVAILABLE = False
+                self._gpio_request = None
         else:
             self._gpio_request = None
             self.get_logger().warn(
