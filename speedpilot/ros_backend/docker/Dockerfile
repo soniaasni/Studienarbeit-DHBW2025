@@ -32,7 +32,7 @@ RUN source /opt/ros/jazzy/setup.bash && \
 # Stage 2: Runtime (minimal)
 FROM ros:jazzy
 ENV ROS_DISTRO=jazzy
-
+ENV PYTHONUNBUFFERED=1
 
 ENV PIP_BREAK_SYSTEM_PACKAGES=1
 ENV DEBIAN_FRONTEND=noninteractive
@@ -47,8 +47,7 @@ RUN apt-get update -q && \
     ros-$ROS_DISTRO-ament-cmake \
     ros-$ROS_DISTRO-rosidl-default-generators \
     ros-$ROS_DISTRO-rosidl-default-runtime \
-    libserial-dev \
-    python3-libgpiod && \
+    libserial-dev && \
     python3 -m pip install --no-cache-dir websocket-server protobuf gpiod
 
 
