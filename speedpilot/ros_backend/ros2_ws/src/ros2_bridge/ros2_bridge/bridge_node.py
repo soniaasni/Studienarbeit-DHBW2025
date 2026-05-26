@@ -78,7 +78,8 @@ def patch_websocket_server():
     def safe_handshake(self, *args, **kwargs):
         try:
             return original_handshake(self, *args, **kwargs)
-        except Exception:
+        except Exception as e:
+            print("Handshake error: ", e)
             try:
                 self.server._client_left_(self)
             except Exception:
