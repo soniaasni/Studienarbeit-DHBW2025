@@ -53,5 +53,5 @@ done
 source "$ROS_WS/install/setup.bash"
 
 echo "[ENTRYPOINT] Starte Car System…"
-exec "$@"
+exec python3 "$MAIN_PYTHON_NODE"
 

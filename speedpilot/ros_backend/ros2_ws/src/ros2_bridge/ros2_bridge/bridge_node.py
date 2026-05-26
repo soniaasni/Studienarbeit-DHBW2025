@@ -70,10 +70,10 @@ def patch_websocket_server():
     """
     try:
         import websocket_server.websocket_server as wss
-    except ImportError:
+        original_handshake = wss.WebSocketHandler.handshake
+    except Exception as e:
+        print(f"Skipping patch_websocket_server due to error: {e}")
         return
-
-    original_handshake = wss.WebSocketHandler.handshake
 
     def safe_handshake(self, *args, **kwargs):
         try:
