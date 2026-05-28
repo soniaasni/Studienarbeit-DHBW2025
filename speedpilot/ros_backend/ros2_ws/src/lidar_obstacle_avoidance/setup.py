@@ -21,6 +21,8 @@ setup(
     entry_points={
         'console_scripts': [
             'obstacle_avoidance_node = lidar_obstacle_avoidance.obstacle_avoidance_node:main',
+            'lidar_driver_node = lidar_obstacle_avoidance.lidar_driver_node:main',
+            'safety_stop_node = lidar_obstacle_avoidance.safety_stop_node:main',
         ],
     },
 )
