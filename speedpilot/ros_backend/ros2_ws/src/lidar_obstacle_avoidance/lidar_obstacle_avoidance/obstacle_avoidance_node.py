@@ -44,13 +44,19 @@ class ObstacleAvoidanceNode(Node):
         self.current_y = plan.next_y
 
         if plan.is_avoiding:
-            speed = self.speed
-            angle = math.radians(plan.steering_angle)
-        else:
-            speed = 0.0
-            angle = 0.0
+            self.publish_command(
+                speed=self.speed,
+                angle=math.radians(plan.steering_angle)
+            )
 
-        self.publish_command(speed=speed, angle=angle)
+            self.get_logger().info(
+                f"Avoiding | obstacles={len(visible_obstacles)} | "
+                f"steering={plan.steering_angle:.1f} deg"
+            )
+        else:
+            # Kein Hindernis: nichts senden.
+            # Dadurch bleibt normale Steuerung aktiv.
+            self.get_logger().info("No obstacle detected - normal control remains active.")
 
         self.get_logger().info(
             f"obstacles={len(visible_obstacles)} | "
@@ -63,7 +69,7 @@ class ObstacleAvoidanceNode(Node):
     def scan_to_obstacles(self, msg: LaserScan):
         obstacles = []
 
-        max_detection_distance = 2.0
+        max_detection_distance = 0.8
         obstacle_width_deg = 5.0
 
         for i, distance in enumerate(msg.ranges):
