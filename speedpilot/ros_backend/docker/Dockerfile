@@ -13,7 +13,7 @@ RUN apt-get update -q && \
     apt-get install -y --no-install-recommends \
     wget curl git build-essential python3-pip python3-rosdep \
     python3-argcomplete python3-colcon-common-extensions python3-networkx python3-vcstool && \
-    python3 -m pip install --no-cache-dir websocket-server protobuf && \
+    python3 -m pip install --no-cache-dir websocket-server protobuf rplidar-roboticia && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # ROS Setup
@@ -48,7 +48,7 @@ RUN apt-get update -q && \
     ros-$ROS_DISTRO-rosidl-default-generators \
     ros-$ROS_DISTRO-rosidl-default-runtime \
     libserial-dev && \
-    python3 -m pip install --no-cache-dir websocket-server protobuf gpiod
+    python3 -m pip install --no-cache-dir websocket-server protobuf gpiod rplidar-roboticia
 
 
 # Kopiere gebaute Artefakte und Source vom Builder
