@@ -34,6 +34,7 @@ class ObstacleAvoidanceNode(Node):
 
     def lidar_callback(self, msg: LaserScan):
         visible_obstacles = self.scan_to_obstacles(msg)
+        self.get_logger().info(str(visible_obstacles))
 
         plan = self.controller.update(
             current_y=self.current_y,
@@ -67,10 +68,11 @@ class ObstacleAvoidanceNode(Node):
         )
 
     def scan_to_obstacles(self, msg: LaserScan):
-        obstacles = []
-
         max_detection_distance = 0.8
-        obstacle_width_deg = 5.0
+        obstacle_width_deg = 20.0
+
+        closest_distance = float('inf')
+        closest_angle_deg = None
 
         for i, distance in enumerate(msg.ranges):
             if not math.isfinite(distance):
@@ -85,16 +87,22 @@ class ObstacleAvoidanceNode(Node):
             angle_rad = msg.angle_min + i * msg.angle_increment
             angle_deg = math.degrees(angle_rad)
 
-            if -90.0 <= angle_deg <= 90.0:
-                obstacles.append(
-                    (
-                        angle_deg,
-                        float(distance),
-                        obstacle_width_deg,
-                    )
-                )
+            # Nur vorne betrachten
+            if -45.0 <= angle_deg <= 45.0:
+                if distance < closest_distance:
+                    closest_distance = float(distance)
+                    closest_angle_deg = angle_deg
 
-        return obstacles
+        if closest_angle_deg is None:
+            return []
+
+        return [
+            (
+                closest_angle_deg,
+                closest_distance,
+                obstacle_width_deg,
+            )
+        ]
 
     def publish_command(self, speed, angle):
         msg = VehicleCommand()

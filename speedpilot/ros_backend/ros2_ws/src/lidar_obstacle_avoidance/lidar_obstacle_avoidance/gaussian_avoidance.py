@@ -121,6 +121,10 @@ class GaussianAvoidanceController:
                     self.reset(current_y=self.reference_y)
                     steering_angle = 0.0
 
+            print("target_y =", target_y)
+            print("dy =", dy)
+            print("steering =", steering_angle)
+
             return AvoidancePlan(
                 x_path=self.active_x_path
                 if self.active_x_path is not None
@@ -256,7 +260,7 @@ class GaussianAvoidanceController:
         if abs(current_offset) > center_threshold:
             return math.copysign(clearance, current_offset)
 
-        return clearance
+        return -clearance
 
     def _path_collides_with_visible_obstacles(self, visible_obstacles):
         if self.active_x_path is None or self.active_y_path is None:
