@@ -32,6 +32,19 @@ class ObstacleAvoidanceNode(Node):
 
         self.get_logger().info('Obstacle Avoidance Node mit Gaussian Controller gestartet.')
 
+        self.command_subscriber = self.create_subscription(
+            VehicleCommand,
+            'vehicle_command',
+            self.vehicle_command_callback,
+            10
+        )
+
+    def vehicle_command_callback(self, msg: VehicleCommand):
+        if msg.command == 'move' and abs(msg.speed) > 0.05:
+            self.is_vehicle_moving = True
+        elif msg.command in ['stop', 'idle'] or abs(msg.speed) <= 0.05:
+            self.is_vehicle_moving = False
+
     def lidar_callback(self, msg: LaserScan):
         if not self.is_vehicle_moving:
             self.controller.reset(current_y=self.current_y)
