@@ -43,13 +43,13 @@ def generate_launch_description():
             executable='obstacle_avoidance_node',
             name='obstacle_avoidance',
             output='screen'
-        ),
-        Node(
-            package='ultrasonic_sensor',
-            executable='ultrasonic_node',
-            name='ultrasonic_sensor',
-            output='screen'
         )
+        #Node(
+        #   package='ultrasonic_sensor',
+        #   executable='ultrasonic_node',
+        #   name='ultrasonic_sensor',
+        #   output='screen'
+        #)
     ])
 
 

@@ -62,8 +62,8 @@ class ObstacleAvoidanceNode(Node):
             f"obstacles={len(visible_obstacles)} | "
             f"avoiding={plan.is_avoiding} | "
             f"steering={plan.steering_angle:.1f} deg | "
-            f"speed={speed:.2f} | "
-            f"angle={angle:.2f} rad"
+            f"speed={self.speed:.2f} | "
+            f"angle={math.radians(plan.steering_angle):.2f} rad"
         )
 
     def scan_to_obstacles(self, msg: LaserScan):
