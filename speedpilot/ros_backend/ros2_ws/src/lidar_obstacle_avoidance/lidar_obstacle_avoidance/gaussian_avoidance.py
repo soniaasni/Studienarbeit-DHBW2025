@@ -2,7 +2,7 @@ import math
 from dataclasses import dataclass
 
 import numpy as np
-
+from custom_msgs.msg import VehicleCommand
 
 @dataclass
 class AvoidancePlan:
@@ -36,7 +36,7 @@ class GaussianAvoidanceController:
         path_length=8.0,
         points=300,
         return_tolerance=0.03,
-        lookahead_factor=15,
+        lookahead_factor=2.0,
         replan_tolerance=0.2,
     ):
         self.safety_distance = safety_distance
@@ -54,6 +54,20 @@ class GaussianAvoidanceController:
         self.active_x_path = None
         self.active_y_path = None
         self.active_steering_angles = None
+        self.is_vehicle_moving = False
+
+        self.command_subscriber = self.create_subscription(
+            VehicleCommand,
+            'vehicle_command',
+            self.vehicle_command_callback,
+            10
+        )
+        
+    def vehicle_command_callback(self, msg: VehicleCommand):
+        if msg.command == 'move' and abs(msg.speed) > 0.05:
+            self.is_vehicle_moving = True
+        elif msg.command in ['stop', 'idle'] or abs(msg.speed) <= 0.05:
+            self.is_vehicle_moving = False
 
     def reset(self, current_y=0.0):
         self.is_avoiding = False

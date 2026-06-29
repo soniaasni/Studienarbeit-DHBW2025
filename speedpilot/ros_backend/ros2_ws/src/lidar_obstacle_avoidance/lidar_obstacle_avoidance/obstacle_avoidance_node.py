@@ -33,6 +33,9 @@ class ObstacleAvoidanceNode(Node):
         self.get_logger().info('Obstacle Avoidance Node mit Gaussian Controller gestartet.')
 
     def lidar_callback(self, msg: LaserScan):
+        if not self.is_vehicle_moving:
+            self.controller.reset(current_y=self.current_y)
+            return
         visible_obstacles = self.scan_to_obstacles(msg)
         self.get_logger().info(str(visible_obstacles))
 
