@@ -68,15 +68,10 @@ class ObstacleAvoidanceNode(Node):
 
         visible_obstacles = self.scan_to_obstacles(msg)
 
-        self.get_logger().info(str(visible_obstacles))
-
-        # Wichtig:
-        # Ohne sichtbares Hindernis nicht weiter "zurück zur Spur" fahren,
-        # weil wir ohne Odometry die echte Spurposition nicht kennen.
         if not visible_obstacles:
             self.controller.reset(current_y=self.current_y)
             self.get_logger().info(
-                "No obstacle visible - avoidance reset, normal control active."
+                "No obstacle visible - avoidance reset"
             )
             return
 
@@ -95,8 +90,8 @@ class ObstacleAvoidanceNode(Node):
 
         self.publish_command(
             speed=avoid_speed,
-            angle=steering_rad,
-        )
+            angle=math.radians(plan.steering_angle)
+)
 
         self.get_logger().info(
             f"Avoiding | obstacles={len(visible_obstacles)} | "

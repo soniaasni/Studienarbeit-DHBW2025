@@ -45,9 +45,11 @@ class GaussianAvoidanceController:
         self.return_tolerance = return_tolerance
         self.lookahead_factor = lookahead_factor
         self.replan_tolerance = replan_tolerance
+        self.avoidance_side = None  # -1 = links, +1 = rechts
 
         self.is_avoiding = False
         self.reference_y = 0.0
+        self.last_steering = 0.0
 
         self.last_obstacles = []
         self.active_x_path = None
@@ -59,6 +61,7 @@ class GaussianAvoidanceController:
     def reset(self, current_y=0.0):
         self.is_avoiding = False
         self.reference_y = current_y
+        self.avoidance_side = None
 
         self.last_obstacles = []
         self.active_x_path = None
@@ -86,8 +89,7 @@ class GaussianAvoidanceController:
         if self.is_avoiding:
             self.active_x_path = self.active_x_path - speed
 
-            lookahead_x = speed * self.lookahead_factor
-            lookahead_x = max(lookahead_x, 0.1)
+            lookahead_x = 0.8
 
             target_y = np.interp(
                 lookahead_x,
@@ -106,6 +108,10 @@ class GaussianAvoidanceController:
                     self.max_steering_deg,
                 )
             )
+
+            alpha = 0.7
+            steering_angle = alpha * self.last_steering + (1 - alpha) * steering_angle
+            self.last_steering = steering_angle
 
             next_y = current_y + math.tan(
                 math.radians(steering_angle)
@@ -179,7 +185,15 @@ class GaussianAvoidanceController:
         return False
 
     def _replan(self, current_y, visible_obstacles):
-        self.last_obstacles = visible_obstacles.copy()
+        # Seite nur einmal festlegen
+        if self.avoidance_side is None and visible_obstacles:
+            angle_deg, _, _ = visible_obstacles[0]
+
+            if angle_deg > 0:
+                self.avoidance_side = -1  # Hindernis rechts → links vorbei
+            else:
+                self.avoidance_side = 1   # Hindernis links → rechts vorbei
+            self.last_obstacles = visible_obstacles.copy()
 
         (
             self.active_x_path,
@@ -250,18 +264,10 @@ class GaussianAvoidanceController:
         clearance,
         current_offset,
     ):
-        center_threshold = 0.2
+        if self.avoidance_side is not None:
+            return self.avoidance_side * clearance
 
-        if obs_y_relative > center_threshold:
-            return obs_y_relative - clearance
-
-        if obs_y_relative < -center_threshold:
-            return obs_y_relative + clearance
-
-        if abs(current_offset) > center_threshold:
-            return math.copysign(clearance, current_offset)
-
-        return -clearance
+        return clearance
 
     def _path_collides_with_visible_obstacles(self, visible_obstacles):
         if self.active_x_path is None or self.active_y_path is None:
