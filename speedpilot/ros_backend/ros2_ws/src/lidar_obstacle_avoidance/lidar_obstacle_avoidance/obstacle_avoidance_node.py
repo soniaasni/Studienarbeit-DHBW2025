@@ -44,13 +44,11 @@ class ObstacleAvoidanceNode(Node):
         self.get_logger().info(
             f"vehicle_command received: command={msg.command}, speed={msg.speed}"
         )
-
-        # Eigene Ausweichbefehle ignorieren
         if msg.command == "avoid":
             return
 
-        if msg.command == "move":
-            self.is_vehicle_moving = abs(msg.speed) > 0.05
+        if msg.command == "move" and msg.speed > 0.05:
+            self.is_vehicle_moving = True
         else:
             self.is_vehicle_moving = False
 

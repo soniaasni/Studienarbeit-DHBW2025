@@ -173,6 +173,8 @@ class CarController(Node):
             self.motor_backward_pin = 25
             self.motor_steering_pin = 23
             self._led_pin = 20
+            self.last_avoid_time = 0.0
+            self.avoid_priority_seconds = 0.5
 
             try:
                 self._gpio_request = gpiod.request_lines(
@@ -240,24 +242,26 @@ class CarController(Node):
             )
 
     def command_callback(self, msg: VehicleCommand):
-        """
-        Process an incoming VehicleCommand message to control vehicle movement and steering.
+        now = time.time()
 
-        Parameters:
-            msg (VehicleCommand): The message containing vehicle command data, including:
-                - command: an identifier for the type of command.
-                - speed: the desired speed; a positive value drives forward, a negative value drives backward.
-                - angle: the steering angle to be set for the vehicle.
-        Behavior:
-            - Logs the received command details.
-            - If msg.speed is greater than zero, invokes drive_forward with the given speed.
-            - If msg.speed is less than zero, invokes drive_backward with the absolute value of the speed.
-            - If msg.speed equals zero, logs that no movement command was received.
-            - Uses the angle value from msg to set the vehicle's steering via set_steering.
-        """
+        # Avoid-Befehle haben Vorrang
+        if msg.command == "avoid":
+            self.last_avoid_time = now
+
+        # Normale Fahrbefehle kurz ignorieren, wenn gerade ein Avoid-Befehl kam
+        elif msg.command == "move":
+            if now - self.last_avoid_time < self.avoid_priority_seconds:
+                self.get_logger().info(
+                    "Move command ignored because avoid has priority."
+                )
+                return
+
         self.get_logger().info(
-            f'Received command: command={msg.command}, speed={msg.speed}, angle={msg.angle}'
+            f"Received command: command={msg.command}, "
+            f"speed={msg.speed}, angle={msg.angle}"
         )
+
+        # Geschwindigkeit setzen
         if msg.speed > 0:
             self.drive_forward(msg.speed)
         elif msg.speed < 0:
@@ -266,9 +270,11 @@ class CarController(Node):
             if GPIO_AVAILABLE:
                 self.motor_forward.ChangeDutyCycle(0)
                 self.motor_backward.ChangeDutyCycle(0)
-            self.get_logger().info('No movement command received (speed is zero).')
+            self.get_logger().info(
+                "No movement command received (speed is zero)."
+            )
 
-        # Use the angle field for steering
+        # Lenkung setzen
         self.set_steering(msg.angle)
 
     def ultrasonic_callback(self, msg: Float32):
