@@ -17,6 +17,7 @@ class ObstacleAvoidanceNode(Node):
         self.current_y = 0.0
         self.speed = 0.5
         self.is_vehicle_moving = False
+        self.last_move_speed = 0.0
 
         self.lidar_subscriber = self.create_subscription(
             LaserScan,
@@ -44,51 +45,64 @@ class ObstacleAvoidanceNode(Node):
         self.get_logger().info(
             f"vehicle_command received: command={msg.command}, speed={msg.speed}"
         )
+
+        # Eigene Avoid-Befehle ignorieren
         if msg.command == "avoid":
             return
 
-        if msg.command == "move" and msg.speed > 0.05:
-            self.is_vehicle_moving = True
+        if msg.command == "move":
+            self.last_move_speed = msg.speed
+            self.is_vehicle_moving = msg.speed > 0.05
         else:
+            self.last_move_speed = 0.0
             self.is_vehicle_moving = False
 
     def lidar_callback(self, msg: LaserScan):
-        self.get_logger().info(f"is_vehicle_moving={self.is_vehicle_moving}")
+        self.get_logger().info(
+            f"is_vehicle_moving={self.is_vehicle_moving}"
+        )
+
         if not self.is_vehicle_moving:
             self.controller.reset(current_y=self.current_y)
             return
+
         visible_obstacles = self.scan_to_obstacles(msg)
+
         self.get_logger().info(str(visible_obstacles))
+
+        # Wichtig:
+        # Ohne sichtbares Hindernis nicht weiter "zurück zur Spur" fahren,
+        # weil wir ohne Odometry die echte Spurposition nicht kennen.
+        if not visible_obstacles:
+            self.controller.reset(current_y=self.current_y)
+            self.get_logger().info(
+                "No obstacle visible - avoidance reset, normal control active."
+            )
+            return
 
         plan = self.controller.update(
             current_y=self.current_y,
             visible_obstacles=visible_obstacles,
-            speed=self.speed,
+            speed=max(self.last_move_speed, 0.1),
         )
 
         self.current_y = plan.next_y
 
-        if plan.is_avoiding:
-            self.publish_command(
-                speed=self.speed,
-                angle=math.radians(plan.steering_angle)
-            )
+        steering_rad = math.radians(plan.steering_angle)
 
-            self.get_logger().info(
-                f"Avoiding | obstacles={len(visible_obstacles)} | "
-                f"steering={plan.steering_angle:.1f} deg"
-            )
-        else:
-            # Kein Hindernis: nichts senden.
-            # Dadurch bleibt normale Steuerung aktiv.
-            self.get_logger().info("No obstacle detected - normal control remains active.")
+        avoid_speed = min(self.last_move_speed, 0.30)
+        avoid_speed = max(avoid_speed, 0.12)
+
+        self.publish_command(
+            speed=avoid_speed,
+            angle=steering_rad,
+        )
 
         self.get_logger().info(
-            f"obstacles={len(visible_obstacles)} | "
-            f"avoiding={plan.is_avoiding} | "
+            f"Avoiding | obstacles={len(visible_obstacles)} | "
             f"steering={plan.steering_angle:.1f} deg | "
-            f"speed={self.speed:.2f} | "
-            f"angle={math.radians(plan.steering_angle):.2f} rad"
+            f"speed={avoid_speed:.2f} | "
+            f"angle={steering_rad:.2f} rad"
         )
 
     def scan_to_obstacles(self, msg: LaserScan):
