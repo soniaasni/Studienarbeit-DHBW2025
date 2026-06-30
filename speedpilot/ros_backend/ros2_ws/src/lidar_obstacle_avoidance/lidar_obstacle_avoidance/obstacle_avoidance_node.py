@@ -16,6 +16,7 @@ class ObstacleAvoidanceNode(Node):
 
         self.current_y = 0.0
         self.speed = 0.5
+        self.is_vehicle_moving = False
 
         self.lidar_subscriber = self.create_subscription(
             LaserScan,
