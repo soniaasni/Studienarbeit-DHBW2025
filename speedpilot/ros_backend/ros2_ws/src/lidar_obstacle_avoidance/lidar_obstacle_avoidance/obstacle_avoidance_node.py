@@ -101,11 +101,15 @@ class ObstacleAvoidanceNode(Node):
         )
 
     def scan_to_obstacles(self, msg: LaserScan):
-        max_detection_distance = 0.8
-        obstacle_width_deg = 20.0
+        max_detection_distance = 1.2
+        min_angle = -70.0
+        max_angle = 70.0
 
-        closest_distance = float('inf')
-        closest_angle_deg = None
+        max_gap_deg = 4.0
+        max_distance_jump = 0.25
+        min_cluster_points = 2
+
+        points = []
 
         for i, distance in enumerate(msg.ranges):
             if not math.isfinite(distance):
@@ -120,22 +124,52 @@ class ObstacleAvoidanceNode(Node):
             angle_rad = msg.angle_min + i * msg.angle_increment
             angle_deg = math.degrees(angle_rad)
 
-            # Nur vorne betrachten
-            if -45.0 <= angle_deg <= 45.0:
-                if distance < closest_distance:
-                    closest_distance = float(distance)
-                    closest_angle_deg = angle_deg
+            if min_angle <= angle_deg <= max_angle:
+                points.append((angle_deg, float(distance)))
 
-        if closest_angle_deg is None:
+        if not points:
             return []
 
-        return [
-            (
-                closest_angle_deg,
-                closest_distance,
-                obstacle_width_deg,
+        clusters = []
+        current = [points[0]]
+
+        for angle, distance in points[1:]:
+            last_angle, last_distance = current[-1]
+
+            if (
+                abs(angle - last_angle) <= max_gap_deg
+                and abs(distance - last_distance) <= max_distance_jump
+            ):
+                current.append((angle, distance))
+            else:
+                clusters.append(current)
+                current = [(angle, distance)]
+
+        clusters.append(current)
+
+        obstacles = []
+
+        for cluster in clusters:
+            if len(cluster) < min_cluster_points:
+                continue
+
+            angles = [p[0] for p in cluster]
+            distances = [p[1] for p in cluster]
+
+            center_angle = sum(angles) / len(angles)
+            min_distance = min(distances)
+            width_deg = max(max(angles) - min(angles), 8.0)
+
+            obstacles.append(
+                (
+                    center_angle,
+                    min_distance,
+                    width_deg,
+                )
             )
-        ]
+
+        obstacles.sort(key=lambda o: o[1])
+        return obstacles[:3]
 
     def publish_command(self, speed, angle):
         msg = VehicleCommand()
