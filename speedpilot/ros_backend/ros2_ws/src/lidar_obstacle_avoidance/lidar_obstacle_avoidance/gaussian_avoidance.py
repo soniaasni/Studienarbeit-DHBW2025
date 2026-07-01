@@ -62,54 +62,11 @@ class GaussianAvoidanceController:
         self.is_avoiding = False
         self.reference_y = current_y
         self.avoidance_side = None
-        self.last_steering = 0.0
 
         self.last_obstacles = []
         self.active_x_path = None
         self.active_y_path = None
         self.active_steering_angles = None
-
-    def _path_collision_score(
-        self,
-        x_path,
-        y_path,
-        visible_obstacles,
-        current_y,
-    ):
-        worst_penetration = 0.0
-
-        for angle_deg, distance, width_deg in visible_obstacles:
-            obs_x, obs_y_local = obstacle_to_local_xy(angle_deg, distance)
-
-            if obs_x <= 0:
-                continue
-
-            obs_y_global = current_y + obs_y_local
-
-            obstacle_width = distance * math.tan(
-                math.radians(width_deg / 2)
-            )
-
-            min_distance = (
-                obstacle_width
-                + self.safety_distance
-                + self.replan_tolerance
-            )
-
-            path_y_at_obstacle = np.interp(
-                obs_x,
-                x_path,
-                y_path,
-            )
-
-            distance_to_path = abs(path_y_at_obstacle - obs_y_global)
-
-            penetration = min_distance - distance_to_path
-
-            if penetration > worst_penetration:
-                worst_penetration = penetration
-
-        return worst_penetration
 
     def update(self, current_y, visible_obstacles, speed):
         if visible_obstacles and not self.is_avoiding:
@@ -121,7 +78,7 @@ class GaussianAvoidanceController:
             if visible_obstacles:
                 if (
                     self._obstacles_changed(visible_obstacles)
-                    or self._path_collides_with_visible_obstacles(visible_obstacles, current_y)
+                    or self._path_collides_with_visible_obstacles(visible_obstacles)
                     or self._too_close_to_visible_obstacle(visible_obstacles)
                 ):
                     self._replan(current_y, visible_obstacles)
@@ -228,57 +185,26 @@ class GaussianAvoidanceController:
         return False
 
     def _replan(self, current_y, visible_obstacles):
-        self.last_obstacles = visible_obstacles.copy()
-
+        # Seite nur einmal festlegen
         if self.avoidance_side is None and visible_obstacles:
-            closest_obstacle = min(visible_obstacles, key=lambda o: o[1])
-            angle_deg, _, _ = closest_obstacle
+            angle_deg, _, _ = visible_obstacles[0]
 
             if angle_deg > 0:
-                self.avoidance_side = -1
+                self.avoidance_side = -1  # Hindernis rechts → links vorbei
             else:
-                self.avoidance_side = 1
+                self.avoidance_side = 1   # Hindernis links → rechts vorbei
+            self.last_obstacles = visible_obstacles.copy()
 
-        current_side = self.avoidance_side
-        other_side = -current_side
-
-        current_x, current_y_path, current_steering = self.plan_path(
+        (
+            self.active_x_path,
+            self.active_y_path,
+            self.active_steering_angles,
+        ) = self.plan_path(
             current_y=current_y,
             visible_obstacles=visible_obstacles,
-            avoidance_side=current_side,
         )
 
-        current_score = self._path_collision_score(
-            current_x,
-            current_y_path,
-            visible_obstacles,
-            current_y,
-        )
-
-        other_x, other_y_path, other_steering = self.plan_path(
-            current_y=current_y,
-            visible_obstacles=visible_obstacles,
-            avoidance_side=other_side,
-        )
-
-        other_score = self._path_collision_score(
-            other_x,
-            other_y_path,
-            visible_obstacles,
-            current_y,
-        )
-
-        if current_score > 0.0 and other_score + 0.05 < current_score:
-            self.avoidance_side = other_side
-            self.active_x_path = other_x
-            self.active_y_path = other_y_path
-            self.active_steering_angles = other_steering
-        else:
-            self.active_x_path = current_x
-            self.active_y_path = current_y_path
-            self.active_steering_angles = current_steering
-
-    def plan_path(self, current_y, visible_obstacles, avoidance_side=None):
+    def plan_path(self, current_y, visible_obstacles):
         x_path = np.linspace(0, self.path_length, self.points)
 
         current_offset = current_y - self.reference_y
@@ -308,7 +234,6 @@ class GaussianAvoidanceController:
                 obs_y_relative=obs_y_relative,
                 clearance=clearance,
                 current_offset=current_offset,
-                avoidance_side=avoidance_side,
             )
 
             sigma = max(0.7, obstacle_width + 0.8)
@@ -338,28 +263,47 @@ class GaussianAvoidanceController:
         obs_y_relative,
         clearance,
         current_offset,
-        avoidance_side=None,
     ):
-        if avoidance_side is None:
-            avoidance_side = self.avoidance_side
-
-        if avoidance_side is not None:
-            return avoidance_side * clearance
+        if self.avoidance_side is not None:
+            return self.avoidance_side * clearance
 
         return clearance
 
-    def _path_collides_with_visible_obstacles(self, visible_obstacles, current_y):
+    def _path_collides_with_visible_obstacles(self, visible_obstacles):
         if self.active_x_path is None or self.active_y_path is None:
             return True
 
-        score = self._path_collision_score(
-            self.active_x_path,
-            self.active_y_path,
-            visible_obstacles,
-            current_y,
-        )
+        for angle_deg, distance, width_deg in visible_obstacles:
+            obs_x, obs_y_local = obstacle_to_local_xy(
+                angle_deg,
+                distance,
+            )
 
-        return score > 0.0
+            if obs_x <= 0:
+                continue
+
+            obstacle_width = distance * math.tan(
+                math.radians(width_deg / 2)
+            )
+
+            path_y_at_obstacle = np.interp(
+                obs_x,
+                self.active_x_path,
+                self.active_y_path,
+            )
+
+            distance_to_path = abs(path_y_at_obstacle - obs_y_local)
+
+            min_distance = (
+                obstacle_width
+                + self.safety_distance
+                + self.replan_tolerance
+            )
+
+            if distance_to_path <= min_distance:
+                return True
+
+        return False
 
     def _obstacles_changed(self, visible_obstacles):
         old_obstacles = self._normalize_obstacles(self.last_obstacles)
