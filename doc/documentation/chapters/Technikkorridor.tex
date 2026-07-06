@@ -1,0 +1,190 @@
+\section{Technikkorridor}
+\label{sec:technikkorridor}
+
+Der Technikkorridor beschreibt den technisch sinnvollen Lösungsraum für die Realisierung eines autonomen Fahrzeugs auf Raspberry-Pi-Basis. Ziel ist es, aus den verfügbaren Hardware-, Betriebssystem- und Softwareoptionen eine Plattform abzuleiten, die für echtzeitnahe Sensorverarbeitung, Kamerabildverarbeitung, Batteriebetrieb, Wartbarkeit und Erweiterbarkeit geeignet ist.
+
+Im Mittelpunkt steht dabei die Frage, welche Kombination aus Einplatinencomputer, Betriebssystem, Robotik-Middleware und optionaler Containerisierung für ein Studien- oder Forschungsprojekt den besten Kompromiss aus Leistungsfähigkeit, Ressourcenbedarf und Entwicklungsaufwand bietet. Für autonome Fahrzeuge sind insbesondere parallele Sensordatenströme, Bildverarbeitung, stabile Kommunikation zwischen Softwarekomponenten sowie eine robuste und wartbare Systemstruktur relevant.
+
+Der Raspberry Pi 4 und der Raspberry Pi 5 stellen dabei zwei naheliegende Hardwareoptionen dar. Während der Raspberry Pi 4 weiterhin für bestehende oder kostenkritische Anwendungen geeignet ist, bietet der Raspberry Pi 5 durch seine höhere CPU-Leistung, bessere I/O-Anbindung und Erweiterbarkeit über PCIe eine deutlich leistungsfähigere Grundlage für Robotik- und autonome Fahrzeugsysteme \cite[Abschnitte ``Memory'', ``Connectivity'' und ``Video \& Sound'']{zotero-item-143} \cite[Abschnitte ``Overview'' und ``Specification'']{zotero-item-144}. Ergänzend beeinflussen Betriebssystemwahl, Softwarearchitektur und Kommunikationskonzept maßgeblich die Praxistauglichkeit des Gesamtsystems.
+
+\subsection{Hardwarevergleich Raspberry Pi 4 und Raspberry Pi 5}
+\label{sec:hw_vergleich}
+
+Der Hardwarevergleich dient dazu, die Eignung des Raspberry Pi 4 und des Raspberry Pi 5 für ein autonomes Fahrzeug einzuordnen. Beide Plattformen besitzen eine ähnliche Grundidee als kompakte Einplatinencomputer, unterscheiden sich jedoch deutlich hinsichtlich Rechenleistung, Speicheranbindung, I/O-Architektur und Erweiterbarkeit.
+
+Der Raspberry Pi 4 basiert auf einer Cortex-A72-Plattform und ist mit bis zu 8 GB LPDDR4-Arbeitsspeicher verfügbar. Er bietet zwei USB-3.0- und zwei USB-2.0-Anschlüsse, Gigabit-Ethernet sowie zwei Micro-HDMI-Ausgänge für Dual-Display-Betrieb bis 4K. Damit ist er für allgemeine IoT-, Embedded- und Server-Anwendungen weiterhin brauchbar. Für rechenintensive Aufgaben wie parallele Sensorverarbeitung, Bildauswertung oder mehrere gleichzeitig laufende Robotik-Komponenten stößt er jedoch früher an Leistungsgrenzen \cite[Abschnitte ``Memory'', ``Connectivity'' und ``Video \& Sound'']{zotero-item-143}.
+
+Der Raspberry Pi 5 stellt demgegenüber die technisch modernere Plattform dar. Er verwendet eine Cortex-A76-basierte CPU und erreicht nach Herstellerangaben eine etwa zwei- bis dreifache CPU-Leistungssteigerung gegenüber dem Raspberry Pi 4 \cite[Abschnitte ``Overview'' und ``Specification'']{zotero-item-144}. Hinzu kommen LPDDR4X-Arbeitsspeicher, der neue RP1-I/O-Controller, eine PCIe-2.0-x1-Schnittstelle, eine integrierte Echtzeituhr sowie ein Power-Button auf dem Board \cite[Abschnitte ``Overview'' und ``Specification'']{zotero-item-144}. Besonders relevant ist die PCIe-Schnittstelle, da sie über entsprechende Adapter den Einsatz von NVMe-SSDs ermöglicht. Dadurch können Logdaten, Kartenmaterial, Container-Images oder Build-Artefakte deutlich performanter gespeichert und gelesen werden.
+
+Auch externe Benchmarks bestätigen den deutlichen Leistungssprung. In Geekbench-6-Messungen erreicht der Raspberry Pi 5 im Single-Core-Test etwa 764 bis 774 Punkte, während der Raspberry Pi 4 bei ungefähr 340 Punkten liegt. Dies entspricht etwa dem 2,4-fachen Leistungsniveau \cite[Abschnitt ``Single core'']{zotero-item-146}. Zusätzlich werden dem Raspberry Pi 5 im Vergleich zum Raspberry Pi 4 eine höhere Speicher- und SD-Karten-Performance sowie eine verbesserte Kamera- und I/O-Anbindung zugeschrieben \cite[Abschnitte ``Performance'' sowie ``PCI, Cameras, Displays\ldots'']{zotero-item-147}.
+
+\begin{table}[h]
+    \centering
+    \caption{Direkter Hardwarevergleich zwischen Raspberry Pi 4 und Raspberry Pi 5}
+    \label{tab:rpi4_rpi5_vergleich}
+    \begin{tabular}{lll}
+        \hline
+        \textbf{Merkmal} & \textbf{Raspberry Pi 4} & \textbf{Raspberry Pi 5} \\
+        \hline
+        CPU & Cortex-A72 & Cortex-A76 \\
+        Arbeitsspeicher & LPDDR4, bis zu 8 GB & LPDDR4X \\
+        PCIe & nicht vorhanden & PCIe 2.0 x1 \\
+        I/O-Architektur & klassisch integriert & RP1-I/O-Controller \\
+        USB-Bandbreite & geringer & höher \\
+        Kameraanbindung & geringer & verbessert \\
+        RTC & nicht hervorgehoben & auf dem Board vorhanden \\
+        Power-Button & nicht hervorgehoben & auf dem Board vorhanden \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Für ein autonomes Fahrzeug ist der Raspberry Pi 5 vor allem aufgrund seiner höheren CPU-Reserven und verbesserten I/O-Fähigkeiten geeigneter. Sensorfusion, Kamerabildverarbeitung und mehrere parallel laufende Softwarekomponenten profitieren stark von dieser zusätzlichen Leistung. Der Raspberry Pi 4 bleibt hingegen eine sinnvolle Option für bestehende Projekte oder kostenkritische Anwendungen, wenn die Anforderungen an Bildverarbeitung, Datenrate und Erweiterbarkeit begrenzt bleiben.
+
+Bei der Energieversorgung ist zwischen Netzteilanforderung und tatsächlicher Leistungsaufnahme zu unterscheiden. Für den Raspberry Pi 5 nennt der Hersteller eine Stromversorgung über USB-C mit 5 V und 5 A über USB Power Delivery \cite[Abschnitt ``Specification'']{zotero-item-144}. Für den Raspberry Pi 4 Model B werden 5 V und 3 A über USB-C oder GPIO angegeben; ein gutes 2,5-A-Netzteil kann genügen, wenn die USB-Peripherie weniger als 500 mA benötigt \cite[Abschnitt ``Power requirements'']{zotero-item-150}. Diese Angaben sind jedoch Versorgungsanforderungen und dürfen nicht unmittelbar als durchschnittlicher Energieverbrauch interpretiert werden.
+
+\subsection{Vergleich unterschiedlicher Betriebssysteme für Raspberry Pi}
+\label{sec:os_vergleich}
+
+Die Wahl des Betriebssystems beeinflusst Ressourcenverbrauch, Hardwareintegration, ROS2-Kompatibilität, Wartbarkeit und Entwicklungsaufwand. Für ein autonomes Fahrzeug sind insbesondere schlanke Systeme mit guter Treiberunterstützung und stabiler Langzeitnutzung relevant. Betrachtet werden Raspberry Pi OS Lite, Ubuntu Server, Ubuntu Desktop und DietPi. Zusätzlich wird die Bedeutung von ARM64 für ROS2 berücksichtigt.
+
+Raspberry Pi OS Lite ist das offiziell naheliegende Betriebssystem für viele Raspberry-Pi-Anwendungsfälle. Es verzichtet auf eine Desktop-Umgebung und eignet sich daher besonders für Headless-Server, Embedded-Anwendungen und batteriebetriebene Systeme. Der geringe Ressourcenbedarf reduziert RAM-Verbrauch, Hintergrundlast und tendenziell auch den Energiebedarf. Raspberry Pi OS Lite 64 Bit wird für Raspberry Pi 3, 4 und 5 empfohlen und bietet eine sehr gute Hardwareintegration \cite[Abschnitte ``Raspberry Pi OS'', ``Raspberry Pi OS Full'' und ``Raspberry Pi OS Lite'']{zotero-item-149} \cite{zotero-item-151}.
+
+Ubuntu Server ist vor allem dann attraktiv, wenn das Projekt stark am Ubuntu- und ROS-Ökosystem ausgerichtet ist. Viele ROS2-Installationsanleitungen, Pakete und Entwicklungsabläufe beziehen sich direkt auf Ubuntu. Dadurch kann Ubuntu Server den Entwicklungsaufwand reduzieren, wenn bereits Linux-Server-Know-how vorhanden ist oder wenn professionelle DevOps-nahe Workflows genutzt werden sollen \cite[Abschnitt ``Ubuntu'']{zotero-item-148}. Ubuntu nennt als Systemanforderungen für Server-Installationen unter anderem einen Mindestbedarf an Arbeitsspeicher und Massenspeicher, wobei für produktive Robotikprojekte ausreichend schneller Speicher eingeplant werden sollte \cite{zotero-item-153}.
+
+Ubuntu Desktop eignet sich besonders für Entwicklung, Simulation und Debugging direkt auf dem Raspberry Pi. Werkzeuge wie RViz und Gazebo können lokal genutzt werden, was bei der Entwicklung und Analyse von ROS2-Systemen hilfreich ist. Gleichzeitig benötigt Ubuntu Desktop deutlich mehr RAM, Speicherplatz und Rechenleistung als ein Headless-System. Für den produktiven Fahrzeugeinsatz ist es daher weniger geeignet, kann aber als Entwicklungsplattform sinnvoll sein \cite{zotero-item-154}.
+
+DietPi ist eine besonders schlanke Alternative für ressourcenschonende Embedded- oder Server-Setups. Es kann interessant sein, wenn minimale Systemlast wichtiger ist als maximale offizielle Raspberry-Pi-Hardwareintegration. Da in der übergebenen BibTeX-Datei jedoch kein eigener DietPi-Eintrag enthalten ist, sollte für eine endgültige wissenschaftliche Fassung noch ein passender BibTeX-Eintrag ergänzt werden.
+
+Für ROS2 ist ARM64 besonders relevant, da diese Architektur im Raspberry-Pi-Kontext eine wichtige Rolle spielt. Eine direkte native ROS2-Installation ist insbesondere auf Ubuntu naheliegend. Raspberry Pi OS 64 Bit kann dagegen in Kombination mit Docker genutzt werden, um Ubuntu-basierte ROS2-Container auszuführen \cite{zotero-item-156}.
+
+\begin{table}[h]
+    \centering
+    \caption{Vergleich relevanter Betriebssystemoptionen}
+    \label{tab:os_vergleich}
+    \begin{tabular}{lllll}
+        \hline
+        \textbf{Kriterium} & \textbf{Pi OS Lite} & \textbf{Ubuntu Server} & \textbf{Ubuntu Desktop} & \textbf{DietPi} \\
+        \hline
+        RAM-Bedarf & sehr gering & mittel & hoch & sehr gering \\
+        Strombedarf & gering & mittel & hoch & gering \\
+        ROS2-Nähe & gut & sehr gut & sehr gut & abhängig vom Setup \\
+        Hardwareintegration & sehr gut & gut & gut & gut bis mittel \\
+        Entwicklung am Gerät & eingeschränkt & eingeschränkt & sehr gut & eingeschränkt \\
+        SSD/NVMe-Einsatz & optional sinnvoll & sinnvoll & sehr sinnvoll & optional \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Für ein autonomes Fahrzeug mit Batteriebetrieb und begrenzten Ressourcen ist Raspberry Pi OS Lite 64 Bit besonders geeignet. Es bietet eine gute Kombination aus geringer Systemlast und sehr guter Hardwareunterstützung. Ubuntu Server bleibt eine starke Alternative, wenn ROS2-Kompatibilität, vorhandenes Ubuntu-Know-how oder spätere Skalierung im Vordergrund stehen. Ubuntu Desktop sollte primär als Entwicklungs- und Debugging-Umgebung betrachtet werden.
+
+\subsection{Softwarearchitektur}
+\label{sec:sw_architektur}
+
+Die Softwarearchitektur legt fest, wie Sensorik, Aktorik, Wahrnehmung, Steuerung und Diagnose logisch strukturiert und miteinander verbunden werden. Für autonome Fahrzeuge bietet sich eine modulare Architektur an, bei der einzelne Funktionen in getrennten Softwarekomponenten ausgeführt werden. Dadurch können Sensorverarbeitung, Lokalisierung, Fahrentscheidung und Motorsteuerung unabhängig entwickelt, getestet und gewartet werden.
+
+ROS2 eignet sich als zentrale Middleware für ein solches System. Es unterstützt die modulare Kommunikation zwischen Knoten und ist in Robotik, autonomen Fahrzeugsystemen und Forschungsprojekten weit verbreitet. Sensoren, Aktoren, Steuerungslogik und Diagnosefunktionen können in ROS2 als getrennte Nodes realisiert werden. Die Kommunikation erfolgt über Topics, Services und Actions, wodurch eine klare Trennung zwischen Datenströmen, Steuerbefehlen und länger laufenden Aktionen möglich wird \cite{zotero-item-156}.
+
+Docker kann ergänzend eingesetzt werden, um Softwareabhängigkeiten und Laufzeitumgebungen in Container zu kapseln. Dies verbessert Reproduzierbarkeit, Wartbarkeit und Deployment, insbesondere wenn mehrere Entwickler beteiligt sind oder mehrere Softwarekomponenten unabhängig voneinander aktualisiert werden müssen. Für kleinere Einzelentwicklerprojekte kann Docker jedoch zusätzliche Komplexität verursachen.
+
+Wissenschaftliche Untersuchungen zeigen, dass Linux-Container bei CPU- und Speicheroperationen häufig nahezu native Performance erreichen können, während relevanter Overhead vor allem bei I/O- und Netzwerkpfaden entstehen kann \cite[Edition ``An Updated Performance Comparison of Virtual Machines and Linux Containers'']{instituteofelectricalandelectronicsengineers2015IEEEInternational2015}. Spezifische Untersuchungen auf verschiedenen Raspberry-Pi-Modellen zeigen zudem, dass Docker grundsätzlich auch auf ressourcenbegrenzten Raspberry-Pi-Systemen einsetzbar ist. Die praktische Skalierbarkeit hängt jedoch stark vom verfügbaren Arbeitsspeicher und von der jeweiligen Container-Workload ab \cite{gamessPerformanceEvaluationDocker2023}.
+
+Der Ressourcenverbrauch von Containern sollte projektbezogen gemessen werden. Docker stellt hierfür unter anderem Metriken zu CPU-Auslastung, Speicherverbrauch, Netzwerk-I/O und Block-I/O bereit \cite{zotero-item-163}. Außerdem verursacht Docker keinen festen, pauschalen RAM-Overhead pro Container. Der tatsächliche Ressourcenbedarf hängt vom Container-Image, von der laufenden Anwendung, von der Anzahl paralleler Container und von gesetzten Ressourcenlimits ab \cite{dockerinc.RuntimeMetrics}.
+
+\begin{table}[h]
+    \centering
+    \caption{Vergleich zwischen nativer ROS2-Installation und Docker-basierter ROS2-Architektur}
+    \label{tab:nativ_vs_docker}
+    \begin{tabular}{lll}
+        \hline
+        \textbf{Kriterium} & \textbf{ROS2 nativ} & \textbf{Docker + ROS2} \\
+        \hline
+        Energieeffizienz & besser & tendenziell schlechter \\
+        RAM-Verbrauch & geringer & höher bzw. workloadequabhängig \\
+        Deployment & aufwendiger & einfacher reproduzierbar \\
+        Wartbarkeit & geringer & höher \\
+        Teamarbeit & weniger komfortabel & besser geeignet \\
+        Reproduzierbarkeit & geringer & höher \\
+        Hardwarezugriff & direkter & konfigurationsabhängig \\
+        Komplexität & geringer & höher \\
+        \hline
+    \end{tabular}
+\end{table}
+
+Für ein Studienprojekt oder ein Einzelentwicklerprojekt überwiegen häufig die Vorteile einer nativen ROS2-Installation: geringere Komplexität, direkter Hardwarezugriff und weniger Ressourcenbedarf. Docker lohnt sich insbesondere dann, wenn reproduzierbare Deployments, klare Trennung mehrerer Komponenten, Teamarbeit oder CI/CD-Prozesse relevant sind.
+
+\subsection{Betrachtete Systemarchitekturen}
+\label{sec:systemarchitekturen}
+
+Aus der Kombination von Hardware, Betriebssystem, ROS2 und optionaler Containerisierung ergeben sich mehrere technisch sinnvolle Systemarchitekturen. Diese unterscheiden sich insbesondere hinsichtlich Ressourcenbedarf, Wartbarkeit, Entwicklungsaufwand und Eignung für den produktiven Fahrzeugeinsatz.
+
+Die erste Variante ist Raspberry Pi OS Lite 64 Bit mit nativer ROS2-Installation. Diese Architektur ist besonders ressourcenschonend und hardwarenah. Sie eignet sich für Einzelentwicklungen, Studienprojekte und batteriebetriebene Fahrzeuge, bei denen geringe Systemlast und einfache Wartung wichtiger sind als vollständig containerisierte Deployments. Der direkte Hardwarezugriff kann insbesondere bei GPIO, Kamera, Sensorik und Aktorik vorteilhaft sein.
+
+Die zweite Variante ist Raspberry Pi OS Lite 64 Bit mit Docker und ROS2. Sie kombiniert die gute Raspberry-Pi-Hardwareintegration mit reproduzierbaren Softwareumgebungen. Diese Architektur ist sinnvoll, wenn mehrere ROS2-Komponenten sauber voneinander getrennt werden sollen oder wenn ein konsistentes Deployment auf mehreren Geräten erforderlich ist. Der Nachteil liegt im höheren Administrationsaufwand und im zusätzlichen Ressourcenbedarf.
+
+Die dritte Variante ist Ubuntu Server mit nativer ROS2-Installation. Sie ist besonders geeignet, wenn das Projekt stark am Ubuntu- und ROS2-Ökosystem orientiert ist. Viele ROS2-Anleitungen und Pakete sind für Ubuntu ausgelegt, wodurch die Einrichtung erleichtert werden kann \cite{zotero-item-156}. Gegenüber Raspberry Pi OS Lite ist jedoch mit einer höheren Systemlast zu rechnen.
+
+Die vierte Variante ist Ubuntu Server mit Docker und ROS2. Diese Architektur bietet hohe Modularität und Reproduzierbarkeit. Sie ist besonders für Teamprojekte, CI/CD-Prozesse und verteilte Softwarekomponenten geeignet. Gleichzeitig ist sie die komplexeste der betrachteten produktiven Varianten und benötigt sorgfältige Ressourcenüberwachung, insbesondere auf einem Raspberry Pi \cite{gamessPerformanceEvaluationDocker2023} \cite{zotero-item-163}.
+
+Die fünfte Variante ist Ubuntu Desktop mit ROS2. Sie eignet sich vor allem als Entwicklungsplattform für grafische Werkzeuge wie RViz oder Gazebo. Für den produktiven Fahrzeugeinsatz ist sie wegen des höheren RAM-, Speicher- und Energiebedarfs weniger attraktiv \cite{zotero-item-154}.
+
+\begin{table}[h]
+    \centering
+    \caption{Bewertung betrachteter Systemarchitekturen}
+    \label{tab:systemarchitekturen}
+    \begin{tabular}{lll}
+        \hline
+        \textbf{Architektur} & \textbf{Stärken} & \textbf{Einschränkungen} \\
+        \hline
+        Pi OS Lite + ROS2 & effizient, hardwarenah & weniger reproduzierbares Deployment \\
+        Pi OS Lite + Docker + ROS2 & wartbar, reproduzierbar & mehr Komplexität und Ressourcenbedarf \\
+        Ubuntu Server + ROS2 & gute ROS2-Nähe & höhere Systemlast \\
+        Ubuntu Server + Docker + ROS2 & modular, teamfähig & komplexeste Variante \\
+        Ubuntu Desktop + ROS2 & gut für Entwicklung & ungeeignet für ressourcenarmen Betrieb \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection{Kommunikationskonzept}
+\label{sec:kommunikationskonzept}
+
+Das Kommunikationskonzept beschreibt, wie auf das Fahrzeug zugegriffen wird und wie Steuerung, Diagnose und Wartung erfolgen. Für ein autonomes Fahrzeug ist eine robuste und möglichst unabhängige Kommunikationslösung wichtig, da das System auch außerhalb vorhandener Netzwerkinfrastruktur zuverlässig erreichbar bleiben soll.
+
+Ein lokaler WLAN-Access-Point auf dem Raspberry Pi stellt hierfür eine geeignete Lösung dar. Das Fahrzeug baut dabei ein eigenes WLAN auf, mit dem sich ein Entwicklungsrechner, Tablet oder Smartphone verbinden kann. Dadurch sind Steuerung, Parametrierung, Diagnose und Logzugriff auch dann möglich, wenn kein externes Netzwerk vorhanden ist. Diese Betriebsart ist besonders praktisch für Tests in Laborumgebungen, auf Teststrecken oder in Bereichen ohne zuverlässige WLAN-Infrastruktur.
+
+Alternativ kann der Raspberry Pi als WLAN-Client in ein vorhandenes Netzwerk eingebunden werden. Dies ist sinnvoll, wenn das Fahrzeug dauerhaft in einer Labor- oder Campusinfrastruktur betrieben wird. Der Vorteil liegt in der einfachen Integration in bestehende Netzwerke. Der Nachteil besteht darin, dass die Erreichbarkeit von der vorhandenen Infrastruktur abhängt.
+
+Ethernet bietet eine robuste und latenzarme Verbindung, ist jedoch kabelgebunden. Es eignet sich daher besonders für Laborbetrieb, stationäre Tests, Einrichtung und Debugging, aber weniger für den mobilen Fahrzeugeinsatz. LTE oder 5G ermöglichen entfernte Einsätze und Fernzugriff, erhöhen jedoch Kosten, Energiebedarf und Systemkomplexität. Für ROS2-Systeme ist außerdem zu beachten, dass die zugrunde liegende DDS-Kommunikation netzwerkabhängig konfiguriert werden muss, insbesondere wenn mehrere Systeme über bestehende Infrastruktur miteinander kommunizieren.
+
+Für das betrachtete autonome Fahrzeug ist daher ein lokaler WLAN-Access-Point als primäres Kommunikationskonzept sinnvoll. Ergänzend kann Ethernet für Einrichtung und Debugging vorgesehen werden. WLAN-Client-Betrieb oder Mobilfunk können optional ergänzt werden, wenn der konkrete Anwendungsfall dies erfordert.
+
+\subsection{Entscheidung und Begründung}
+\label{sec:entscheidung}
+
+Auf Basis des Hardwarevergleichs, der Betriebssystembewertung und der betrachteten Softwarearchitekturen wird folgende Zielplattform empfohlen:
+
+\begin{itemize}
+    \item Raspberry Pi 5 als Hardwareplattform,
+    \item Raspberry Pi OS Lite 64 Bit als Betriebssystem,
+    \item ROS2 als zentrale Robotik-Middleware,
+    \item Docker optional, abhängig von Teamgröße, Deployment-Anforderungen und Projektkomplexität,
+    \item lokaler WLAN-Access-Point als primäres Kommunikationskonzept.
+\end{itemize}
+
+Der Raspberry Pi 5 wird gegenüber dem Raspberry Pi 4 bevorzugt, da er deutlich höhere CPU-Reserven, bessere I/O-Leistung, eine modernere Speicheranbindung und PCIe-Erweiterbarkeit bietet \cite[Abschnitte ``Overview'' und ``Specification'']{zotero-item-144}. Gerade bei Sensorfusion, Kamerabildverarbeitung und parallelen ROS2-Knoten sind diese Reserven entscheidend. Die gemessenen Benchmark-Unterschiede zeigen zudem, dass der Raspberry Pi 5 im Single-Core-Bereich deutlich leistungsfähiger ist als der Raspberry Pi 4 \cite[Abschnitt ``Single core'']{zotero-item-146}.
+
+Raspberry Pi OS Lite 64 Bit wird gewählt, weil es eine geringe Systemlast mit sehr guter Hardwareintegration verbindet. Der Verzicht auf eine Desktop-Umgebung reduziert RAM-Verbrauch, Hintergrundprozesse und Energiebedarf. Dies ist für ein batteriebetriebenes autonomes Fahrzeug besonders wichtig \cite[Abschnitte ``Raspberry Pi OS'' und ``Raspberry Pi OS Lite'']{zotero-item-149}.
+
+ROS2 wird als Softwarebasis gewählt, weil es eine modulare Architektur für Robotiksysteme ermöglicht und die Kommunikation zwischen Sensorik, Aktorik, Wahrnehmung und Steuerung strukturiert unterstützt \cite{zotero-item-156}. Die native Installation ist für ein Einzelentwickler- oder Studienprojekt zunächst die effizienteste Lösung, da sie weniger Systemkomplexität verursacht und direkten Hardwarezugriff erleichtert.
+
+Docker wird nicht als zwingender Bestandteil der Zielarchitektur festgelegt, sondern als optionale Ergänzung bewertet. Der Einsatz ist sinnvoll, wenn mehrere Entwickler beteiligt sind, mehrere ROS2-Komponenten sauber getrennt werden sollen oder reproduzierbare Deployments erforderlich sind. Wenn hingegen maximale Akkulaufzeit, maximale Performance oder ein möglichst einfaches System im Vordergrund stehen, ist eine native ROS2-Installation vorzuziehen. Diese differenzierte Entscheidung ist wichtig, da Docker zwar Wartbarkeit und Reproduzierbarkeit verbessert, aber zusätzlichen Administrationsaufwand und workloadequabhängigen Ressourcenbedarf verursacht \cite{gamessPerformanceEvaluationDocker2023} \cite{dockerinc.RuntimeMetrics}.
+
+\subsection{Fazit}
+\label{sec:fazit_technikkorridor}
+
+Der Technikkorridor zeigt, dass der Raspberry Pi 5 mit Raspberry Pi OS Lite 64 Bit und ROS2 den besten technologischen Ausgangspunkt für ein autonomes Fahrzeug im Studien- oder Forschungsumfeld darstellt. Diese Kombination verbindet hohe Rechen- und I/O-Reserven mit geringer Systemlast, guter Hardwareunterstützung und hoher Zukunftssicherheit.
+
+Der Raspberry Pi 4 bleibt für bestehende oder kostenkritische Projekte weiterhin nutzbar, ist für leistungsorientierte autonome Systeme jedoch weniger geeignet. Der Raspberry Pi 5 bietet durch seine stärkere CPU, den RP1-I/O-Controller, bessere Kamera- und USB-Anbindung sowie PCIe/NVMe-Erweiterbarkeit die deutlich tragfähigere Plattform \cite[Abschnitte ``Overview'' und ``Specification'']{zotero-item-144} \cite[Abschnitte ``Performance'' sowie ``PCI, Cameras, Displays\ldots'']{zotero-item-147}.
+
+Bei der Betriebssystemwahl ist Raspberry Pi OS Lite 64 Bit für den produktiven Fahrzeugeinsatz besonders geeignet, da es ressourcenschonend ist und eine sehr gute Raspberry-Pi-Hardwareintegration bietet \cite[Abschnitt ``Raspberry Pi OS Lite'']{zotero-item-149}. Ubuntu Server bleibt eine gute Alternative, wenn die Nähe zum ROS2- und Ubuntu-Ökosystem wichtiger ist als minimale Systemlast. Ubuntu Desktop ist vor allem als Entwicklungsplattform für Visualisierung, Simulation und Debugging sinnvoll.
+
+Docker verbessert Wartbarkeit, Reproduzierbarkeit und Skalierbarkeit, sollte aber nicht pauschal als Pflichtbestandteil der Architektur betrachtet werden. Für Einzelentwicklungen und batteriebetriebene Studienprojekte ist Raspberry Pi OS Lite mit nativer ROS2-Installation meist die effizienteste Lösung. Docker lohnt sich insbesondere bei Teamprojekten, CI/CD-Prozessen oder mehreren verteilten Softwarekomponenten. Der empfohlene Technikkorridor lautet daher: Raspberry Pi 5, Raspberry Pi OS Lite 64 Bit, ROS2 nativ als Basis und Docker als optionale Erweiterung.
