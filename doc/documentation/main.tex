@@ -36,6 +36,7 @@
 \usepackage{array}
 \usepackage{adjustbox}  % max width=\textwidth
 \addbibresource{literatur/T2000.bib}
+\addbibresource{literatur/scott.bib}
 
 
 \definecolor{lightgray}{rgb}{0.95,0.95,0.95}
@@ -74,18 +75,18 @@
 \newpage
 
 
-% usw.
 \pagenumbering{arabic}
-\input{Einleitung} \newpage
-\input{Methodik}\newpage
-\input{Grundlagen}\newpage
-\input{Loesungen_herleiten}\newpage
-\input{Ist-Zustand und wissenschaftliche Bewertung der Sensorik}\newpage
-\input{Konzept und Anforderungsdefinition}\newpage
-\input{Implementierung}\newpage
-\input{Evaluation und Validierung}\newpage
-\input{Kritische Reflexion}\newpage
-\input{Fazit und Ausblick}\newpage
+
+\input{chapters/Einleitung.tex} \newpage
+\input{chapters/Ist_Zustand.tex} \newpage
+\input{chapters/Technikkorridor.tex} \newpage
+\input{chapters/Autoumbau.tex} \newpage
+\input{chapters/Autonomes_Fahren.tex} \newpage
+\input{chapters/Implementierung_Autonomes_Fahren.tex} \newpage
+\input{chapters/Aktualisierung_App.tex} \newpage
+\input{chapters/Ergebnisse.tex} \newpage
+\input{chapters/Fazit_und_Ausblick.tex} \newpage
+
 
 \cleardoublepage
 \pagenumbering{Roman}
