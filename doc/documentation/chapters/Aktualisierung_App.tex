@@ -1,1 +1,14 @@
-\section{Aktualisierung der Applikation}
+\section{Aktualisierung der Applikation (Elena)}
+Um die Neigungssteuerung funktionsfähig und zuverlässiger zu gestalten, wurde die Sensoranbindung überarbeitet. Die ursprünglich verwendete Bibliothek motion\_sensors wurde durch die modernere Bibliothek sensors\_plus ersetzt. Dadurch werden nicht mehr die bereits berechneten Pitch- und Roll-Werte ausgegeben, sondern die Rohdaten des Sensors, aus denen die Neigungswinkel Pitch und Roll mathematisch berechnet werden. Dadurch ist die Steuerung nicht mehr von der fehleranfälligen Orientierungsfunktion der ursprünglichen Bibliothek abhängig und kann auf unterschiedlichen Geräten zuverlässiger arbeiten.
+\\
+Die ermittelten Neigungswerte werden anschließend nicht mehr unmittelbar an das Fahrzeug übertragen, sondern zunächst verarbeitet. Hierfür wurde eine Deadzone eingeführt, die sehr kleine Bewegungen des Smartphones ignoriert. Dadurch werden unbeabsichtigte Eingaben verhindert und das Fahrzeug bleibt bei ruhiger Haltung des Geräts stehen.
+\\
+Zusätzlich wurde ein Low-Pass-Filter implementiert, der die Sensordaten glättet. Da Messwerte von Bewegungssensoren häufig Schwankungen und Rauschen enthalten, sorgt die Glättung für eine ruhigere und gleichmäßigere Fahrzeugsteuerung. Plötzliche kleine Ausschläge wirken sich dadurch nicht mehr unmittelbar auf das Fahrverhalten aus.
+\\
+Um die Steuerung an unterschiedliche Fahrzeuge oder Nutzer anpassen zu können, wurden außerdem Verstärkungsfaktoren (Gain) für Geschwindigkeit und Lenkung eingeführt. Diese ermöglichen eine einfache Anpassung der Empfindlichkeit, ohne die eigentliche Berechnung der Sensordaten verändern zu müssen. Ergänzend wurden Optionen zum Invertieren der Achsen integriert, sodass sich die Steuerungsrichtung bei Bedarf anpassen lässt.
+\\
+Die berechneten Steuerwerte werden abschließend auf einen zulässigen Wertebereich begrenzt, bevor sie über den WebSocketManager an das Fahrzeug übertragen werden. Dadurch wird sichergestellt, dass nur gültige Werte an das Fahrzeug gesendet werden und unerwartete Sensorausschläge keine unzulässigen Steuerbefehle erzeugen.
+\\
+Neben der eigentlichen Sensorverarbeitung wurden auch die Einstellungen innerhalb der App angepasst. Über einen Button kann nun ausgewählt werden, ob die Steuerung per Neigung oder per Joystick erfolgen soll. Die Neigungssteuerung wird nur dann geladen, wenn sie explizit aktiviert wurde. Dadurch unterstützt die Anwendung mehrere Steuerungsarten und bietet dem Nutzer mehr Flexibilität.
+\\
+Darüber hinaus wurde die Verwaltung des Sensor-Streams verbessert. Beim Verlassen der Seite wird die Verbindung zum Sensor ordnungsgemäß beendet, wodurch unnötiger Ressourcenverbrauch und mögliche Fehler durch weiterhin laufende Sensorabfragen vermieden werden. Insgesamt führen diese Änderungen zu einer stabileren, besser anpassbaren und deutlich präziseren Neigungssteuerung.

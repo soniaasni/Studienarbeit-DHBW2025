@@ -1,6 +1,54 @@
 \section{Implementierung Autonomes Fahren}
 \label{sec:implementierung_autonomes_fahren}
+\subsection{Hinderniserkennung (Elena)}
+In einem ersten Ansatz zur Hinderniserkennung werden die vom \gls{lidar}-Sensor bereitgestellten Messdaten direkt ausgewertet. Hierzu werden sämtliche Messpunkte innerhalb eines festgelegten Maximalabstands betrachtet. Befindet sich ein Messwert innerhalb dieses Abstandes, wird dieser unmittelbar als Hindernis interpretiert. Dieses Verfahren ermöglicht zwar grundsätzlich die Erkennung von Objekten vor dem Fahrzeug, erweist sich im praktischen Betrieb jedoch als wenig robust.
+\\
+Insbesondere führen einzelne fehlerhafte Messpunkte bereits zu einer Hinderniserkennung. Solche Ausreißer entstehen beispielsweise durch Reflexionen, Messrauschen oder ungültige Distanzwerte. Das Fahrzeug beginnt dadurch teilweise ein Ausweichmanöver, obwohl sich kein tatsächliches Hindernis vor ihm befindet. Zusätzlich werden auch Objekte berücksichtigt, die sich außerhalb des relevanten Fahrbereichs befinden und somit keinen Einfluss auf die aktuelle Fahrspur haben.
+\\
+Zur Verbesserung der Hinderniserkennung können mehrere Maßnahmen umgesetzt werden. Zunächst wird der ausgewertete Sichtbereich des \gls{lidar}-Sensors auf einen Winkelbereich vor dem Fahrzeug begrenzt. Dadurch werden ausschließlich Messpunkte innerhalb des für die Fahrtrichtung relevanten Winkels berücksichtigt. Gleichzeitig wird ein maximaler Erkennungsabstand eingeführt, sodass weit entfernte Objekte die Fahrentscheidung nicht beeinflussen.
+\\
+Ein weiterer wesentlicher Bestandteil ist die Clusterbildung. Hierbei wird ein Hindernis nicht mehr anhand eines einzelnen Messpunktes erkannt, sondern erst dann, wenn mehrere benachbarte Messpunkte räumlich zusammengehören. Einzelne Ausreißer werden dadurch zuverlässig unterdrückt, da sie keine ausreichende Anzahl benachbarter Messungen besitzen. Dieses Verfahren erhöht die Robustheit der Hinderniserkennung erheblich und reduziert Fehlentscheidungen.
+\\
+Zusätzlich werden ungültige \gls{lidar}-Messwerte verworfen. Hierzu zählen insbesondere unendliche oder außerhalb des gültigen Messbereichs liegende Werte. Erst nach dieser Vorverarbeitung werden die verbleibenden Messpunkte zur Hinderniserkennung verwendet. Die Kombination aus Sichtfeldbegrenzung, Distanzfilterung und Clusterbildung bildet somit die Grundlage für eine zuverlässige Objekterkennung.
 
+\subsection{Gauß-basierte Hindernisvermeidung (Elena)}
+Nach der Erkennung eines Hindernisses besteht die Aufgabe, dieses Hindernis zu vermeiden. Dazu soll ein geeigneter Fahrpfad berechnet und daraus ein Lenkwinkel für das Fahrzeug abgeleitet werden. Statt eines konstanten Lenkwinkels soll hierfür eine Gaußfunktion verwendet werden, um ein ruhiges Fahrverhalten zu erzeugen und nach dem Ausweichmanöver wieder auf die Ursprüngliche Spur zurück zu gelangen.
+\\
+Zu Beginn eines Ausweichmanövers speichert der Controller die aktuelle Fahrzeugposition als Referenzspur (reference\_y). Diese Referenz bildet den Ausgangspunkt für die Berechnung der Ausweichspur. Anschließend wird die Position des Hindernisses aus den vom \gls{lidar} gelieferten Winkel- und Entfernungsinformationen in kartesische Koordinaten umgerechnet. Auf Grundlage dieser Hindernisposition wird eine Gaußfunktion erzeugt, deren Amplitude den notwendigen seitlichen Sicherheitsabstand beschreibt. Die Gaußfunktion wird anschließend auf den Referenzpunkt des Fahrzeuges addiert und ergibt so eine kontinuierliche Sollspur.
+\\
+Im Gegensatz zu einer vollständigen Spurplanung wird diese Ausweichspur jedoch nicht als fester Fahrplan bis zum Ende abgefahren. Stattdessen dient sie als lokale Orientierung für die Fahrzeugregelung. Während der Fahrt wird fortlaufend ein Lookahead-Punkt auf der berechneten Spur bestimmt. Aus der seitlichen Abweichung zwischen Fahrzeugposition und diesem Zielpunkt wird mithilfe einer geometrischen Beziehung der aktuell benötigte Lenkwinkel berechnet. Dadurch reagiert das Fahrzeug kontinuierlich auf den berechneten Fahrpfad, ohne für jeden Abschnitt einen festen Lenkwinkel vorzugeben.
+\\
+Die Wahl einer Gaußfunktion bietet gegenüber einer konstanten Lenkstrategie mehrere Vorteile. Durch ihren stetigen Verlauf entstehen gleichmäßige Änderungen des Lenkwinkels, wodurch abrupte Richtungswechsel vermieden werden. Gleichzeitig kann die seitliche Auslenkung über die Parameter der Gaußfunktion an unterschiedliche Hindernisgrößen angepasst werden. Die Ausweichspur ist lokal begrenzt und beeinflusst daher nur den Bereich um das erkannte Hindernis.
+\\
+Die aktuelle Implementierung stellt einen ersten funktionsfähigen Ansatz für eine Gauß-basierte Hindernisvermeidung dar. Bereits umgesetzt sind die Berechnung einer Gaußkurve, die Bestimmung eines Lenkwinkels anhand eines Lookahead-Punktes sowie die Speicherung der ursprünglichen Fahrspur als Referenz. Eine vollständige Spurverfolgung bis zur automatischen Rückkehr auf die Ausgangsspur ist jedoch noch nicht vollständig realisiert. Sobald im aktuellen System kein Hindernis mehr erkannt wird, wird der Hindernisvermeidungscontroller zurückgesetzt. Dadurch wird die berechnete Ausweichspur nicht bis zu ihrem Ende verfolgt. Die vorhandene Referenzspur bildet jedoch bereits die Grundlage für eine spätere Erweiterung, bei der das Fahrzeug nach dem Umfahren eines Hindernisses selbstständig auf seine ursprüngliche Fahrbahn zurückkehrt.
+\\
+Damit bildet die aktuelle Implementierung die Grundlage für eine kontinuierliche Hindernisvermeidung. Gegenüber einer einfachen festen Lenkstrategie ermöglicht sie bereits ein deutlich ruhigeres Fahrverhalten und schafft gleichzeitig die Voraussetzungen für zukünftige Erweiterungen, wie eine vollständige Spurverfolgung oder die Berücksichtigung mehrerer gleichzeitig erkannter Hindernisse.
+\begin{figure}[h!]
+	\centering
+	\includegraphics[scale=0.37]{images/Klassendiagramm_ausweichen.png}
+	\caption[Klassendiagramm: Ausweichen]{Klassendiagramm: Ausweichen} 
+\end{figure}
+
+\subsection{Optimierung der Spurplanung (Elena)}
+Während der ersten Implementierung wurde die Ausweichtrajektorie nach jedem eingehenden \gls{lidar}-Scan vollständig neu berechnet. Da sich die gemessenen Hindernispositionen durch Messrauschen geringfügig ändern, entstanden kontinuierlich unterschiedliche Trajektorien.
+\\
+Dieses permanente Replanning führte dazu, dass sich der berechnete Lenkwinkel ständig änderte. In einigen Situationen wechselte das Fahrzeug sogar mehrfach zwischen einer Ausweichbewegung nach links und nach rechts oder begann Kreisbewegungen auszuführen. Statt das Hindernis zuverlässig zu umfahren, steuerte das Fahrzeug teilweise erneut darauf zu.
+\\
+Aus diesem Grund wurde die Anzahl der Neuplanungen deutlich reduziert. Nach Beginn eines Ausweichmanövers bleibt die ursprünglich berechnete Trajektorie bestehen. Eine neue Planung erfolgt nur dann, wenn sich die Hindernissituation wesentlich verändert hat oder ein zusätzliches Hindernis erkannt wird. Dadurch bleibt die geplante Fahrbahn während des gesamten Manövers stabil.
+\\
+Zusätzlich wird der berechnete Lenkwinkel mittels exponentieller Glättung gefiltert. Hierbei wird der aktuelle Lenkwinkel nicht vollständig übernommen, sondern mit dem zuvor berechneten Wert kombiniert. Für den verwendeten Glättungsfaktor α = 0,7 ergibt sich ein Tiefpassverhalten, das schnelle Änderungen unterdrückt und kleine Schwankungen der \gls{lidar}-Messung ausgleicht. Dadurch entstehen weichere Lenkbewegungen und ein deutlich ruhigeres Fahrverhalten. Die aktuelle Implementierung replant nur bei relevanten Änderungen der Hindernissituation und glättet den Lenkwinkel mittels exponentieller Mittelung (alpha = 0.7).
+
+\subsection{Priorisierung der Fahrbefehle (Elena)}
+Während des Betriebs sendet die Smartphone-Anwendung kontinuierlich Fahrbefehle an den Fahrzeugcontroller. Gleichzeitig erzeugt die Hindernisvermeidung eigene Steuerbefehle, sobald ein Hindernis erkannt wird. Ohne zusätzliche Priorisierung würden beide Komponenten gleichzeitig Steuerbefehle senden.
+\\
+In ersten Versuchen führte dies dazu, dass normale Fahrbefehle die berechneten Ausweichkommandos unmittelbar überschrieben. Das Fahrzeug begann zwar mit einem Ausweichmanöver, erhielt jedoch im nächsten Steuerzyklus erneut einen manuellen Fahrbefehl und kehrte sofort auf die ursprüngliche Fahrtrichtung zurück.
+\\
+Zur Lösung dieses Problems besitzt der Befehl avoid innerhalb des Fahrzeugcontrollers eine höhere Priorität als normale Fahrbefehle (move). Während eines aktiven Ausweichmanövers werden eingehende Fahrbefehle der Smartphone-Anwendung ignoriert. Erst nach erfolgreichem Abschluss der Trajektorie wird wieder auf die manuellen Steuerbefehle reagiert. Diese Priorisierung sorgt dafür, dass ein begonnenes Ausweichmanöver zuverlässig abgeschlossen wird. Die Prioritätslogik wird im Car-Controller über einen Zeitstempel realisiert, der normale move-Kommandos während eines aktiven avoid-Manövers unterdrückt.
+\begin{figure}[h!]
+	\centering
+	\includegraphics[scale=0.43]{images/Ablauf_Hindernisvermeidung.png}
+	\caption[Klassendiagramm: Ausweichen]{Zustandsdiagramm: Ausweichen} 
+\end{figure}
 \subsection{Ideen}
 \label{sec:ideen}
 
