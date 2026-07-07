@@ -3,6 +3,14 @@
 
 \subsection{Offene Herausforderungen}
 \label{sec:offene_herausforderungen}
+\subsubsection{Grenzen der Hindernisvermeidung (Elena)}
+Die Hindernisvermeidung wurde so erweitert, dass sie ausschließlich während einer aktiven Fahrzeugbewegung arbeitet. Hierzu wird der aktuelle Bewegungszustand überwacht. Steht das Fahrzeug, wird die Hindernisvermeidung zurückgesetzt und es werden keine Ausweichtrajektorien berechnet. Dadurch wird verhindert, dass bereits im Stand unnötige Lenkbewegungen ausgeführt werden.
+\\
+Eine weitere Verbesserung besteht in der automatischen Rückkehr auf die ursprüngliche Fahrspur. Zu Beginn eines Ausweichmanövers wird die seitliche Referenzposition gespeichert. Nach dem Passieren des Hindernisses führt die berechnete Gaußtrajektorie das Fahrzeug kontinuierlich auf diese Referenz zurück. Dadurch fährt das Fahrzeug nach dem Ausweichen wieder mittig auf seiner ursprünglichen Spur und verbleibt nicht dauerhaft versetzt.
+\\
+Während der Entwicklung traten darüber hinaus sporadische Kommunikationsprobleme mit dem \gls{lidar}-Sensor auf. Dabei erschien wiederholt die Fehlermeldung Descriptor length mismatch. Das Problem trat sowohl direkt nach dem Systemstart als auch während des Betriebs auf und ließ sich nicht zuverlässig reproduzieren. Im Rahmen der Fehlersuche wurden unter anderem Container-Neustarts, das erneute Verbinden der USB-Schnittstelle, das Leeren des seriellen Puffers, ein verzögerter Sensorstart sowie die Überprüfung der CPU-Auslastung und der Stromversorgung durchgeführt. Trotz dieser Maßnahmen konnte keine eindeutige Ursache identifiziert werden. Da der Fehler nur sporadisch auftritt, wird dieser Aspekt als bekannte Einschränkung des Systems dokumentiert.
+\\
+Die größte funktionale Einschränkung betrifft derzeit die Auswahl der Ausweichseite. Die Entscheidung basiert ausschließlich auf den aktuell sichtbaren Hindernissen. Bei langen Hindernissen, Wänden oder teilweise verdeckten Objekten kann dadurch eine ungünstige Ausweichrichtung gewählt werden. Zukünftige Arbeiten könnten dieses Problem durch das Beibehalten einer einmal gewählten Ausweichseite, die Auswertung mehrerer aufeinanderfolgender \gls{lidar}-Scans oder den Einsatz einer lokalen Occupancy-Grid- beziehungsweise Costmap-Repräsentation lösen.
 
 \subsection{Positives}
 \label{sec:positives}
