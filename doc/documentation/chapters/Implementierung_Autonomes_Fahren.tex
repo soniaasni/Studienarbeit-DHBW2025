@@ -23,6 +23,11 @@ Die Wahl einer Gaußfunktion bietet gegenüber einer konstanten Lenkstrategie me
 Die aktuelle Implementierung stellt einen ersten funktionsfähigen Ansatz für eine Gauß-basierte Hindernisvermeidung dar. Bereits umgesetzt sind die Berechnung einer Gaußkurve, die Bestimmung eines Lenkwinkels anhand eines Lookahead-Punktes sowie die Speicherung der ursprünglichen Fahrspur als Referenz. Eine vollständige Spurverfolgung bis zur automatischen Rückkehr auf die Ausgangsspur ist jedoch noch nicht vollständig realisiert. Sobald im aktuellen System kein Hindernis mehr erkannt wird, wird der Hindernisvermeidungscontroller zurückgesetzt. Dadurch wird die berechnete Ausweichspur nicht bis zu ihrem Ende verfolgt. Die vorhandene Referenzspur bildet jedoch bereits die Grundlage für eine spätere Erweiterung, bei der das Fahrzeug nach dem Umfahren eines Hindernisses selbstständig auf seine ursprüngliche Fahrbahn zurückkehrt.
 \\
 Damit bildet die aktuelle Implementierung die Grundlage für eine kontinuierliche Hindernisvermeidung. Gegenüber einer einfachen festen Lenkstrategie ermöglicht sie bereits ein deutlich ruhigeres Fahrverhalten und schafft gleichzeitig die Voraussetzungen für zukünftige Erweiterungen, wie eine vollständige Spurverfolgung oder die Berücksichtigung mehrerer gleichzeitig erkannter Hindernisse.
+\begin{figure}[h!]
+	\centering
+	\includegraphics[scale=0.37]{images/Klassendiagramm_ausweichen.png}
+	\caption[Klassendiagramm: Ausweichen]{Klassendiagramm: Ausweichen} 
+\end{figure}
 
 \subsection{Optimierung der Spurplanung (Elena)}
 Während der ersten Implementierung wurde die Ausweichtrajektorie nach jedem eingehenden \gls{lidar}-Scan vollständig neu berechnet. Da sich die gemessenen Hindernispositionen durch Messrauschen geringfügig ändern, entstanden kontinuierlich unterschiedliche Trajektorien.
@@ -41,13 +46,7 @@ In ersten Versuchen führte dies dazu, dass normale Fahrbefehle die berechneten 
 Zur Lösung dieses Problems besitzt der Befehl avoid innerhalb des Fahrzeugcontrollers eine höhere Priorität als normale Fahrbefehle (move). Während eines aktiven Ausweichmanövers werden eingehende Fahrbefehle der Smartphone-Anwendung ignoriert. Erst nach erfolgreichem Abschluss der Trajektorie wird wieder auf die manuellen Steuerbefehle reagiert. Diese Priorisierung sorgt dafür, dass ein begonnenes Ausweichmanöver zuverlässig abgeschlossen wird. Die Prioritätslogik wird im Car-Controller über einen Zeitstempel realisiert, der normale move-Kommandos während eines aktiven avoid-Manövers unterdrückt.
 \begin{figure}[h!]
 	\centering
-	\includegraphics[scale=0.37]{images/Klassendiagramm_ausweichen.png}
-	\caption[Klassendiagramm: Ausweichen]{Klassendiagramm: Ausweichen} 
-\end{figure}
-
-\begin{figure}[h!]
-	\centering
-	\includegraphics[scale=0.48]{images/Ablauf_Hindernisvermeidung.png}
+	\includegraphics[scale=0.43]{images/Ablauf_Hindernisvermeidung.png}
 	\caption[Klassendiagramm: Ausweichen]{Zustandsdiagramm: Ausweichen} 
 \end{figure}
 \subsection{Ideen}
