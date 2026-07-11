@@ -1,4 +1,4 @@
-\section{Aktualisierung der Applikation (Elena)}
+\section{Aktualisierung der Applikation}
 Um die Neigungssteuerung funktionsfähig und zuverlässiger zu gestalten, wurde die Sensoranbindung überarbeitet. Die ursprünglich verwendete Bibliothek motion\_sensors wurde durch die modernere Bibliothek sensors\_plus ersetzt. Dadurch werden nicht mehr die bereits berechneten Pitch- und Roll-Werte ausgegeben, sondern die Rohdaten des Sensors, aus denen die Neigungswinkel Pitch und Roll mathematisch berechnet werden. Dadurch ist die Steuerung nicht mehr von der fehleranfälligen Orientierungsfunktion der ursprünglichen Bibliothek abhängig und kann auf unterschiedlichen Geräten zuverlässiger arbeiten.
 \\
 Die ermittelten Neigungswerte werden anschließend nicht mehr unmittelbar an das Fahrzeug übertragen, sondern zunächst verarbeitet. Hierfür wurde eine Deadzone eingeführt, die sehr kleine Bewegungen des Smartphones ignoriert. Dadurch werden unbeabsichtigte Eingaben verhindert und das Fahrzeug bleibt bei ruhiger Haltung des Geräts stehen.
