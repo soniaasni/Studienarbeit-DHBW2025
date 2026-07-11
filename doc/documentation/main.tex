@@ -15,7 +15,7 @@
 \usepackage{color}
 \usepackage[
     backend=biber,
-    style=numeric,
+    style=ieee,
     sorting=nyt
 ]{biblatex}
 \makeatletter
@@ -37,6 +37,7 @@
 \usepackage{adjustbox}  % max width=\textwidth
 \addbibresource{literatur/T2000.bib}
 \addbibresource{literatur/scott.bib}
+\addbibresource{literatur/sonia.bib}
 
 
 \definecolor{lightgray}{rgb}{0.95,0.95,0.95}
@@ -83,6 +84,7 @@
 \input{chapters/Methodik.tex} \newpage
 \input{chapters/Autoumbau.tex} \newpage
 \input{chapters/Autonomes_Fahren.tex} \newpage
+\input{chapters/Containerisierung_Systemstart.tex} \newpage
 \input{chapters/Implementierung_Autonomes_Fahren.tex} \newpage
 \input{chapters/Aktualisierung_App.tex} \newpage
 \input{chapters/Ergebnisse.tex} \newpage
@@ -93,11 +95,11 @@
 \pagenumbering{Roman}
 \setcounter{page}{5}
 
-\cite{dummyhidden}
+% Hinweis: Der Platzhalter \cite{dummyhidden} und der Satz "Es wurden keine
+% Literaturverweise im Dokument gesetzt." wurden entfernt, da das Dokument
+% inzwischen echte Literaturverweise enthaelt.
 \addcontentsline{toc}{section}{Literaturverzeichnis}
 \printbibliography[title={Literaturverzeichnis}]
-
-\par\noindent\textit{Es wurden keine Literaturverweise im Dokument gesetzt.}
 
 
 
