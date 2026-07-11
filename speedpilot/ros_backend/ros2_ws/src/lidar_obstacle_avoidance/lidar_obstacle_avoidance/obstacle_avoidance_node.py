@@ -9,16 +9,19 @@ from lidar_obstacle_avoidance.gaussian_avoidance import GaussianAvoidanceControl
 
 
 class ObstacleAvoidanceNode(Node):
+    # ROS2-Node, der LiDAR-Daten in Ausweichbefehle für das Fahrzeug umwandelt
     def __init__(self):
         super().__init__('obstacle_avoidance_node')
 
         self.controller = GaussianAvoidanceController()
 
+        # Vereinfachte seitliche Position und letzter Fahrzustand des Fahrzeugs
         self.current_y = 0.0
         self.speed = 0.5
         self.is_vehicle_moving = False
         self.last_move_speed = 0.0
 
+        # LiDAR-Scans liefern für Hinderniserkennung
         self.lidar_subscriber = self.create_subscription(
             LaserScan,
             'scan',
@@ -26,6 +29,7 @@ class ObstacleAvoidanceNode(Node):
             10
         )
 
+        # Ausweichbefehle als VehicleCommand veröffentlichen
         self.command_publisher = self.create_publisher(
             VehicleCommand,
             'vehicle_command',
@@ -34,6 +38,7 @@ class ObstacleAvoidanceNode(Node):
 
         self.get_logger().info('Obstacle Avoidance Node mit Gaussian Controller gestartet.')
 
+        # Eingehende Fahrbefehle, um Bewegung und Geschwindigkeit zu verwenden
         self.command_subscriber = self.create_subscription(
             VehicleCommand,
             'vehicle_command',
@@ -42,6 +47,7 @@ class ObstacleAvoidanceNode(Node):
         )
 
     def vehicle_command_callback(self, msg: VehicleCommand):
+        # Speichert normale Fahrbefehle
         self.get_logger().info(
             f"vehicle_command received: command={msg.command}, speed={msg.speed}"
         )
@@ -58,6 +64,7 @@ class ObstacleAvoidanceNode(Node):
             self.is_vehicle_moving = False
 
     def lidar_callback(self, msg: LaserScan):
+        # Verarbeitet LiDAR-Scan nur, wenn das Fahrzeug fährt
         self.get_logger().info(
             f"is_vehicle_moving={self.is_vehicle_moving}"
         )
@@ -68,6 +75,7 @@ class ObstacleAvoidanceNode(Node):
 
         visible_obstacles = self.scan_to_obstacles(msg)
 
+        # Ohne sichtbares Hindernis wird kein Ausweichbefehl gesendet
         if not visible_obstacles:
             self.controller.reset(current_y=self.current_y)
             self.get_logger().info(
@@ -75,6 +83,7 @@ class ObstacleAvoidanceNode(Node):
             )
             return
 
+        # Controller berechnet den nächsten Lenkwinkel und die geschätzte Position.
         plan = self.controller.update(
             current_y=self.current_y,
             visible_obstacles=visible_obstacles,
@@ -85,6 +94,7 @@ class ObstacleAvoidanceNode(Node):
 
         steering_rad = math.radians(plan.steering_angle)
 
+        # Beim Ausweichen Geschwindigkeit begrenzen
         avoid_speed = min(self.last_move_speed, 0.30)
         avoid_speed = max(avoid_speed, 0.12)
 
@@ -101,6 +111,7 @@ class ObstacleAvoidanceNode(Node):
         )
 
     def scan_to_obstacles(self, msg: LaserScan):
+        # Sucht das nächste gültige Hindernis im vorderen Sichtbereich
         max_detection_distance = 0.8
         obstacle_width_deg = 20.0
 
@@ -138,6 +149,7 @@ class ObstacleAvoidanceNode(Node):
         ]
 
     def publish_command(self, speed, angle):
+        # Erstellt und veröffentlicht Ausweichbefehl für den Fahrcontroller
         msg = VehicleCommand()
         msg.command = 'avoid'
         msg.speed = float(speed)

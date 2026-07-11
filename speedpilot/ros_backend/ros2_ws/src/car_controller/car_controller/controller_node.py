@@ -173,6 +173,7 @@ class CarController(Node):
             self.motor_backward_pin = 25
             self.motor_steering_pin = 23
             self._led_pin = 20
+            # Avoid-Befehle dürfen normale Move-Befehle kurz übersteuern
             self.last_avoid_time = 0.0
             self.avoid_priority_seconds = 0.5
 
