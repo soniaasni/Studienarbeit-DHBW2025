@@ -14,3 +14,14 @@ Weitere Probleme sind, dass es keine Deadzone für unbeabsichtigte kleine Bewegu
 
 \subsection{Probleme}
 \label{sec:probleme}
+% ==== Beginn Beitrag (Autorin: Sonia Sinaci) ====
+Aus Sicht der Sensorik und der Systeminfrastruktur bestanden zum Zeitpunkt der Ist-Analyse vier wesentliche, im Projektverlauf dokumentierte Probleme.
+\\
+Erstens wurden die \gls{lidar}-Daten nicht richtig verarbeitet. Eine operative Nutzung realer \gls{lidar}-Hardware war nicht implementiert: Die vorhandenen \gls{lidar}-bezogenen Komponenten arbeiteten ausschließlich auf statischen, vorab aufgezeichneten Beispieldaten, und es fehlten Treiber- und Kommunikationsschnittstellen zur Anbindung des physischen Sensors. Im Fahrbetrieb lieferte der Sensor damit keinerlei verwertbare Daten.
+\\
+Zweitens funktionierten alle Sensoren bis auf einen nicht. Nach der Aktualisierung des Betriebssystems auf dem Raspberry~Pi brach die gesamte GPIO-Ansteuerung, wodurch neben Motorsteuerung und Lenkung auch die Sensorik ausfiel. Der Ultraschallsensor lieferte zusätzlich aufgrund eines Pinkonflikts mit dem SPI-Subsystem keine gültigen Messwerte. Zeitweise stand somit nur ein einziger funktionsfähiger Sensor zur Verfügung. Die Analyse und Behebung dieser Ausfälle sowie der daraus abgeleitete Wechsel auf den \gls{lidar} als primären Sensor werden in Abschnitt~\ref{sec:datenverarbeitung_sonia} beschrieben.
+\\
+Drittens beeinträchtigte der zu große Container die Anwendung. Das damalige Container-Image enthielt neben den Laufzeitabhängigkeiten auch vollständige Entwicklungswerkzeuge und grafische Anwendungen. Auf dem ressourcenbeschränkten Raspberry~Pi führte dies zu langen Bau- und Ladezeiten, und die Anwendung funktionierte dadurch nicht richtig (Lösung siehe Kapitel~\ref{sec:containerisierung_systemstart}).
+\\
+Viertens war der Systemstart nicht intuitiv. Das Starten des Systems erforderte eine Abfolge manueller Schritte im Container, die erst verstanden und eingerichtet werden musste. Ohne dieses Vorwissen war das System nicht in Betrieb zu nehmen. Zugleich war die Schrittfolge fehleranfällig und führte zu schwer reproduzierbaren Zuständen (Lösung siehe Abschnitt~\ref{sec:deterministischer_systemstart}).
+% ==== Ende Beitrag ====

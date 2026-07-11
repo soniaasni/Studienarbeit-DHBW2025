@@ -1,2 +1,73 @@
 \section{Fazit und Ausblick}
 \label{sec:fazit_ausblick}
+
+% =====================================================================
+% Beginn Beitrag (Autorin: Sonia Sinaci)
+% =====================================================================
+\subsection{Ausblick und Weiterentwicklungsmöglichkeiten}
+\label{sec:ausblick_sonia}
+Die implementierte \gls{lidar}-Verarbeitungskette, die Sicherheitsfunktion, die Visualisierung und die Container-Infrastruktur bilden eine tragfähige Grundlage, eröffnen jedoch an mehreren Stellen konkrete und wissenschaftlich lohnende Weiterentwicklungspfade. Tabelle~\ref{tab:weiterentwicklungspfade} ordnet die Pfade ein. Die folgenden Abschnitte beschreiben zu jedem Pfad, wie eine Umsetzung konkret erfolgen könnte, und begründen, warum gerade dieser Weg gewählt werden sollte.
+\begin{table}[h!]
+\centering
+\small
+\begin{tabular}{p{4.2cm} p{4.4cm} p{5.6cm}}
+\toprule
+\textbf{Weiterentwicklungspfad} & \textbf{Baut auf auf} & \textbf{Erster konkreter Schritt} \\
+\midrule
+Zeitliche Filterung und Clusterbildung & Aufbereitungsstufe des Treibers & Ringpuffer über die letzten 3 bis 5 Scans, gleitender Median je Winkelklasse \\
+Live-Heatmaps und Belegungsgitter & Topic /scan, Flutter-Rasteranzeige & Knoten mit Ray Casting (Bresenham) und Log-Odds-Aktualisierung \\
+SLAM und Lokalisierung & Stabile LaserScan-Publikation & Integration von slam\_toolbox, Aufbau des TF-Baums \\
+Erweiterte Sicherheitsfunktion & safety\_stop-Knoten & Geschwindigkeitsabhängige Auslösedistanz aus Bremsversuchen bestimmen \\
+Automatisierte Laufdaten-Auswertung & Protokollierungskonzept & Aufzeichnung aller Topics mit rosbag2 je Testlauf \\
+CI/CD für Container & Multi-Stage-Build & GitHub-Actions-Workflow mit docker buildx für ARM64 \\
+\bottomrule
+\end{tabular}
+\caption{Weiterentwicklungspfade im Überblick}
+\label{tab:weiterentwicklungspfade}
+\end{table}
+
+\subsubsection{Weiterentwicklung der LiDAR-Datenverarbeitung}
+Die aktuelle Aufbereitung der Scandaten arbeitet scanweise und aggregiert je Winkelklasse die minimale Distanz. Drei Ausbaustufen bieten sich an, die jeweils eine konkrete Schwäche des aktuellen Stands adressieren.
+\\
+Erstens eine zeitliche Filterung: Statt jeden Scan isoliert zu betrachten, könnten die letzten N Scans, beispielsweise N gleich 3 bis 5, je Winkelklasse zu einem gleitenden Median zusammengefasst werden. Die Begründung liegt im Messverhalten des Sensors: Einzelne Ausreißer, wie sie durch Reflexionen oder Messrauschen entstehen, treten typischerweise nur in einem einzelnen Scan auf, während echte Hindernisse über mehrere Scans stabil gemessen werden. Der Median wurde gegenüber dem Mittelwert bewusst vorgeschlagen, da er gegenüber einzelnen Extremwerten robust ist und ein einzelner Ausreißer das Ergebnis nicht verschiebt. Die Umsetzung erfordert lediglich einen Ringpuffer der letzten Scans im Treiber oder in einem eigenen Filterknoten sowie eine Medianbildung je Winkelklasse. Die zusätzliche Latenz von wenigen hundert Millisekunden bleibt für die gefahrenen Geschwindigkeiten unkritisch.
+\\
+Zweitens eine Clusterbildung auf Treiberebene: Benachbarte Messpunkte ähnlicher Distanz könnten zu Objekthypothesen zusammengefasst werden, sodass nachgelagerte Knoten nicht mehr mit Rohpunkten, sondern mit Objekten samt Position, Ausdehnung und nächstem Punkt arbeiten. Ein einfacher Ansatz ist das sequentielle Durchlaufen der Winkelklassen mit einem Distanzsprung-Kriterium. Anspruchsvoller wäre ein dichtebasiertes Verfahren wie DBSCAN auf den in kartesische Koordinaten transformierten Punkten. Dies würde die bereits in der Hinderniserkennung angelegte Clusterlogik systematisch verallgemeinern und allen Konsumenten zugutekommen lassen, statt sie in jedem Knoten erneut zu implementieren.
+\\
+Drittens die Umstellung des Treibers auf einen etablierten, gepflegten ROS-Treiber, etwa das Paket \texttt{sllidar\_ros2} des Herstellers, oder alternativ eine Reimplementierung des eigenen Treibers in C++ als Lifecycle-Node. Lifecycle-Nodes erlauben einen deterministischen Startablauf über die Phasen Konfigurieren, Aktivieren und Deaktivieren und würden die bisher über Wartezeiten gelöste Startreihenfolge der Knoten sauber formalisieren. Der Erhalt des eigenen Treibers hätte demgegenüber den Vorteil der vollständigen Kontrolle über die entwickelte Synchronisationsstrategie. Welche Option vorzuziehen ist, sollte anhand eines Stabilitätsvergleichs beider Treiber über längere Testläufe entschieden werden.
+
+\subsubsection{Live-Heatmaps und Umgebungskarten}
+Die vorhandene Heatmap-Darstellung visualisiert bislang statische Beispieldaten. Der naheliegende nächste Schritt ist die Erzeugung eines Belegungsgitters zur Laufzeit aus dem Topic \texttt{/scan}. Konkret würde ein neuer Knoten jeden Laserscan mittels Strahlverfolgung, beispielsweise über den Bresenham-Algorithmus, in ein Raster eintragen: Zellen entlang des Strahls gelten als frei, die Zelle am Messpunkt als belegt. Um Messrauschen zu glätten, sollte die Aktualisierung nicht binär, sondern probabilistisch über Log-Odds erfolgen, wie es in der Literatur zu Belegungsgittern üblich ist. Die Begründung ist, dass eine einzelne fehlerhafte Messung eine Zelle dann nicht dauerhaft umkippen kann, sondern erst wiederholte übereinstimmende Messungen den Zellzustand festigen. Das Ergebnis ließe sich direkt als Standard-Nachricht \texttt{nav\_msgs/OccupancyGrid} publizieren, wodurch etablierte Werkzeuge wie RViz ohne Zusatzaufwand zur Kontrolle nutzbar wären.
+\\
+Für die Anzeige in der App müsste die WebSocket-Bridge um die Übertragung des Gitters ergänzt werden. Da vollständige Gitter bei hoher Auflösung groß werden, bieten sich zwei Optimierungen an: die Übertragung nur geänderter Zellbereiche (Delta-Kodierung) sowie eine reduzierte Auflösung für die mobile Darstellung. Die bestehende Flutter-Rasterdarstellung könnte unverändert weiterverwendet werden, da ihre Datenstruktur bereits dem ROS-Nachrichtenformat nachempfunden ist. Genau für diesen Übergang wurde die Kompatibilität seinerzeit vorgesehen. Lediglich die Farbskala sollte von einer binären auf eine kontinuierliche Belegungswahrscheinlichkeit umgestellt werden.
+\\
+Darüber hinaus eröffnen aggregierte Heatmaps über mehrere Testläufe hinweg eine analytische Perspektive: Werden die Belegungsgitter mehrerer Fahrten überlagert, entstehen Aufenthalts- und Hinderniskarten des Einsatzbereichs, aus denen sich systematische Problemzonen wie schlecht erfassbare Materialien oder tote Winkel ablesen lassen. Dies wäre ein unmittelbar publikationsfähiger Auswertungsansatz für Folgearbeiten.
+
+\subsubsection{Selbstlokalisierung und Kartierung (SLAM)}
+Mit der stabilen Publikation von Laserscans ist die zentrale Voraussetzung für simultane Lokalisierung und Kartierung geschaffen. Ein konkreter Umsetzungspfad wäre die Integration des Pakets \texttt{slam\_toolbox}, das in ROS~2 als Standard gilt und direkt auf \texttt{/scan} aufsetzt. Die Wahl dieses Pakets ist durch seine aktive Pflege, die Dokumentationslage und die direkte Kompatibilität mit dem vorhandenen Nachrichtenformat begründet. Dafür müssten zwei Lücken geschlossen werden: Erstens benötigt SLAM eine Odometrie-Schätzung. Diese könnte aus Radencodern gewonnen oder ersatzweise über eine inertiale Messeinheit gestützt werden, wobei sich für die Fusion das Paket \texttt{robot\_localization} mit einem erweiterten Kalman-Filter anbietet. Zweitens muss ein konsistenter Koordinatenrahmenbaum (TF-Baum) mit den Rahmen für Karte, Odometrie, Fahrzeugbasis und Sensor definiert werden. Die statische Transformation zwischen Fahrzeugbasis und Sensor ergibt sich aus der Einbauposition des \gls{lidar}. Als Ergebnis stünde eine konsistente Umgebungskarte zur Verfügung, die sowohl die Heatmap-Anzeige der App speisen als auch als Grundlage für globale Pfadplanung dienen könnte.
+
+\subsubsection{Erweiterung der Sicherheitsfunktion}
+Die implementierte Not-Halt-Funktion arbeitet mit einem festen Abstandsschwellenwert von 1,0~m und einem festen Frontsektor. Drei Erweiterungen würden die Schutzwirkung deutlich erhöhen.
+\\
+Erstens ein geschwindigkeitsabhängiger Anhalteweg: Statt eines festen Schwellenwerts sollte die Auslösedistanz aus der aktuellen Geschwindigkeit berechnet werden, näherungsweise als
+\[
+d_{\mathrm{stopp}} = v \cdot t_r + \frac{v^2}{2\,a_{\mathrm{max}}},
+\]
+wobei $t_r$ die Reaktionszeit des Systems aus Scanrate, Verarbeitungs- und Stellzeit und $a_{\mathrm{max}}$ die maximal erreichbare Verzögerung bezeichnet. Die Begründung liegt auf der Hand: Ein fester Schwellenwert ist bei niedriger Geschwindigkeit unnötig konservativ und bei hoher Geschwindigkeit unter Umständen zu knapp. Beide Größen ließen sich experimentell auf dem Fahrzeug bestimmen. Die Reaktionszeit folgt unmittelbar aus den bereits protokollierten Laufdaten, die Verzögerung aus Bremsversuchen mit Distanzmessung.
+\\
+Zweitens ein lenkwinkelabhängiger Überwachungssektor: Bei Kurvenfahrt liegt der gefährdete Bereich nicht symmetrisch vor dem Fahrzeug. Der überwachte Winkelbereich sollte daher mit dem aktuellen Lenkwinkel mitgeführt werden, sodass der Sektor der tatsächlichen Fahrschlauchrichtung folgt. Die dazu nötige Information liegt in der Sicherheitsschicht bereits vor, da sie sämtliche Fahrbefehle durchleitet. Die Erweiterung erfordert somit keine neue Schnittstelle.
+\\
+Drittens Robustheitsmechanismen auf Systemebene: Eine Hysterese zwischen Auslöse- und Freigabedistanz würde das Flattern der Freigabe an der Schwelle verhindern. Ein Totmann-Mechanismus (Watchdog) sollte das Fahrzeug zusätzlich stoppen, wenn für eine definierte Zeit keine Laserscans mehr eintreffen, da die Schutzfunktion sonst bei Sensorausfall stillschweigend unwirksam würde. Dieser Fall ist besonders kritisch, weil er vom Bediener nicht bemerkt werden kann. Schließlich böte die Fusion mit dem Ultraschallsensor eine redundante zweite Messquelle im Nahbereich, deren Plausibilisierung gegen den \gls{lidar} Fehlmessungen beider Sensoren erkennbar machen würde.
+
+\subsubsection{Systematisierung der Laufdatenverarbeitung}
+Die bislang manuell durchgeführte Auswertung der Laufdaten ließe sich zu einer automatisierten Auswertungskette ausbauen. Konkret bietet ROS~2 mit \texttt{rosbag2} ein Standardwerkzeug, um alle Topics eines Testlaufs, also Scans, Fahrbefehle und Sicherheitsereignisse, vollständig aufzuzeichnen. Darauf aufbauend könnte eine Auswertungspipeline in Python die Aufzeichnungen einlesen und je Lauf definierte Kennzahlen berechnen: erreichte Scanrate, Latenz zwischen Hinderniserkennung und Stoppbefehl, Häufigkeit ungültiger Messwerte, Anzahl und Dauer von Verbindungsabbrüchen sowie Auslösestatistik der Sicherheitsfunktion. Die Kennzahlen ließen sich als Zeitreihen ablegen und mit Werkzeugen wie Foxglove Studio oder einfachen Diagrammen visualisieren.
+\\
+Besonders wertvoll wäre die Nutzung aufgezeichneter Läufe als Regressionstests: Aufgezeichnete Scans können in der Entwicklungsumgebung wieder abgespielt werden, sodass Änderungen an Filterung, Hinderniserkennung oder Sicherheitslogik reproduzierbar gegen identische Eingabedaten geprüft werden können, ohne dass das physische Fahrzeug benötigt wird. Die Begründung für diesen Ansatz liegt in der bereits umgesetzten Trennung von Hardware und Logik: Da alle Konsumenten ausschließlich auf dem Topic \texttt{/scan} arbeiten, ist es für sie unerheblich, ob die Daten vom realen Sensor oder aus einer Aufzeichnung stammen. Damit würde diese Trennung konsequent bis in die Qualitätssicherung fortgeführt.
+
+\subsubsection{Automatisierung der Container-Infrastruktur}
+Der eingeführte Multi-Stage-Build wird bislang manuell angestoßen. Der folgerichtige Ausbau ist eine kontinuierliche Integrationskette, beispielsweise über GitHub Actions: Bei jeder Änderung würden die ROS-Pakete automatisch gebaut, die Container-Images über \texttt{docker buildx} nativ für die Zielarchitektur ARM64 erzeugt und in einer Registry abgelegt. Das Fahrzeug könnte fertige Images dann nur noch beziehen, statt sie lokal zu bauen, was die Inbetriebnahmezeit auf dem Raspberry~Pi erheblich verkürzen würde. Das Bauen auf dem Pi selbst hat sich in den Testläufen als der zeitaufwendigste Einzelschritt erwiesen. Ergänzend sollten Gesundheitsprüfungen (Healthchecks) im Compose-Manifest definiert werden, damit der Zustand der Knoten von außen überwachbar ist, sowie getrennte Compose-Profile für Simulations- und Fahrzeugbetrieb, um die bestehenden Simulationsrückfälle explizit zu konfigurieren. Perspektivisch ließe sich der Ressourcenbedarf auf dem Zielsystem weiter senken, indem die Python-Knoten als komponierbare Knoten (Composable Nodes) in einem gemeinsamen Prozess zusammengeführt werden, wodurch der Kommunikationsaufwand zwischen den Knoten entfällt.
+
+\subsubsection{Zusammenfassende Einordnung}
+Die genannten Pfade bauen sämtlich unmittelbar auf den geschaffenen Grundlagen auf: Die zeitliche Filterung und die Clusterbildung erweitern die bestehende Aufbereitungsstufe, Live-Heatmaps und SLAM setzen auf dem stabilen Scan-Topic auf, die erweiterte Sicherheitsfunktion verfeinert die vorhandene Schutzschicht, und die Automatisierung der Infrastruktur führt den eingeschlagenen Weg der Reproduzierbarkeit konsequent fort. Die Arbeit hinterlässt damit nicht nur ein funktionsfähiges System, sondern ein anschlussfähiges Fundament für wissenschaftliche Folgearbeiten.
+% =====================================================================
+% Ende Beitrag (Autorin: Sonia Sinaci)
+% =====================================================================

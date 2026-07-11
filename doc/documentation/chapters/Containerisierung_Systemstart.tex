@@ -1,0 +1,41 @@
+% =====================================================================
+% Kapitel: Containerisierung und Systemstart (Autorin: Sonia Sinaci)
+% =====================================================================
+\section{Containerisierung und Systemstart}
+\label{sec:containerisierung_systemstart}
+Das gesamte ROS~2 Backend wird in Docker-Containern auf dem Raspberry~Pi betrieben. Die Containerisierung verfolgt drei Ziele: eine reproduzierbare Laufzeitumgebung unabhängig vom Zustand des Host-Systems, identische Umgebungen auf Entwicklungsrechnern und Zielsystem sowie einen deterministischen Systemstart. Dieses Kapitel beschreibt die Ausgangslage mit ihren Problemen sowie die umgesetzten Lösungen.
+
+\subsection{Ausgangslage und Probleme}
+\label{sec:container_probleme}
+Das ursprüngliche, monolithische Dockerfile installierte Entwicklungswerkzeuge, grafische Anwendungen und Laufzeitabhängigkeiten in ein einziges Image. Daraus resultierten lange Bauzeiten und ein unnötig großes Image auf dem ressourcenbeschränkten Zielsystem. Durch den zu großen Container funktionierte auch die Anwendung nicht richtig: Das Übertragen und Entpacken des Images auf dem Raspberry~Pi dauerte unverhältnismäßig lange, und die knappen Ressourcen des Zielsystems wurden durch nicht benötigte Bestandteile belastet.
+\\
+Hinzu kam, dass der Start des Systems in frühen Projektphasen eine Abfolge manueller Schritte im Container erforderte. Der Startprozess musste erst verstanden und eingerichtet werden und war nicht intuitiv: Ohne Vorwissen über die richtige Reihenfolge der Kommandos war das System nicht in Betrieb zu nehmen. Dies war fehleranfällig, erschwerte Testläufe und führte zu schwer reproduzierbaren Zuständen. Zusätzlich belasteten versehentlich eingecheckte, generierte Bauartefakte das Repository und verursachten Konflikte zwischen den Arbeitsständen der Teammitglieder.
+\\
+Ein weiteres Problem betraf die Zusammenarbeit zwischen Windows-Entwicklungsumgebung und Linux-Zielsystem: Skripte, die auf Windows-Rechnern ausgecheckt und anschließend in den Linux-Container eingebunden wurden, schlugen dort mit schwer interpretierbaren Fehlermeldungen fehl. Als Ursache wurden Windows-Zeilenenden (CRLF) identifiziert, die Git beim Auschecken auf Windows-Systemen standardmäßig einfügt. Der Linux-Interpreter wertet das zusätzliche Wagenrücklaufzeichen als Bestandteil von Befehlen beziehungsweise Pfaden, wodurch unter anderem die Ausführung des Entrypoints und der Python-Knoten scheiterte. Das Problem ist besonders tückisch, weil es nur in der Kombination aus Windows-Checkout und Linux-Ausführung auftritt und auf dem Entwicklungsrechner nicht sichtbar ist.
+\\
+Schließlich stand die Zielhardware, also das Fahrzeug mit Raspberry~Pi, Sensorik und Aktorik, dem Team nur eingeschränkt zur Verfügung. Ohne Gegenmaßnahmen hätten alle hardwarenahen Knoten auf Entwicklungsrechnern nicht einmal gestartet werden können, da bereits der Import der GPIO-Bibliothek beziehungsweise der Zugriff auf Gerätedateien fehlschlägt.
+
+\subsection{Multi-Stage-Build}
+\label{sec:multistage_build}
+Zur Lösung des Größenproblems wurde der Bauprozess auf einen zweistufigen Multi-Stage-Build umgestellt, den Abbildung~\ref{fig:docker_multistage} veranschaulicht. Die erste Stufe, der Builder, enthält die vollständige Werkzeugkette und übersetzt die ROS-Pakete mit \texttt{colcon}. Zwischenartefakte wie Build- und Log-Verzeichnisse werden anschließend entfernt. Die zweite Stufe, die Runtime, basiert auf dem schlanken ROS-Basisimage und übernimmt ausschließlich die installierten Artefakte der Builder-Stufe. Ergänzend wurde eine \texttt{.dockerignore} eingeführt, damit nicht benötigte Dateien den Build-Kontext nicht aufblähen. Diese Struktur reduziert sowohl die Imagegröße als auch die Bauzeit deutlich und trennt Bau- und Laufzeitumgebung konzeptionell sauber. Die zuvor beobachteten Beeinträchtigungen der Anwendung durch das übergroße Image entfallen damit.
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=\textwidth]{images/Docker_MultiStage_Build.png}
+	\caption[Zweistufiger Multi-Stage-Build der Container-Images]{Zweistufiger Multi-Stage-Build der Container-Images}
+	\label{fig:docker_multistage}
+\end{figure}
+
+\subsection{Deterministischer Systemstart}
+\label{sec:deterministischer_systemstart}
+Der zuvor nicht intuitive Startprozess wurde vollständig automatisiert. Der Start des Containers wurde als einziger Einstiegspunkt (Single Point of Entry) gestaltet: Mit dem Start des Containers werden über ein zentrales Launch-File alle Knoten des Systems, also Bridge, Fahrzeugcontroller, \gls{lidar}-Treiber, Sicherheitsknoten und Ultraschallsensor, automatisch und in definierter Konfiguration gestartet. Manuelle Startschritte auf dem Fahrzeug entfallen vollständig. Das System ist damit auch ohne Detailwissen über die interne Kommandofolge in Betrieb zu nehmen.
+\\
+Für den Hardwarezugriff werden die benötigten Gerätedateien, also der GPIO-Chip und die serielle USB-Schnittstelle, explizit in den Container durchgereicht. Die WebSocket-Schnittstelle der Bridge wird über eine definierte Portzuordnung nach außen angeboten. Ein Portkonflikt der WebSocket-Schnittstelle wurde durch Umstellung der Portzuordnung behoben und der Arbeitsschritt im Repository dokumentiert. Die generierten Bauartefakte von in Summe circa 12700 Zeilen wurden aus der Versionsverwaltung entfernt und über erweiterte Ignorier-Regeln dauerhaft ausgeschlossen. Beide Maßnahmen verbesserten die Reproduzierbarkeit der Testläufe und die Stabilität der Zusammenarbeit erheblich.
+
+\subsection{Plattformübergreifende Lauffähigkeit}
+\label{sec:plattform_lauffaehigkeit}
+Die Lösung der Zeilenenden-Problematik wurde zweistufig ausgelegt. Präventiv erzwingt eine Regel in der Datei \texttt{.gitattributes} (\texttt{*.py eol=lf}), dass Python-Dateien repositoryweit stets mit Unix-Zeilenenden ausgecheckt werden. Defensiv entfernt der Entrypoint des Containers beim Start zusätzlich vorhandene Wagenrücklaufzeichen aus den eingebundenen Skripten. Durch die Kombination beider Maßnahmen ist der Fehlerfall sowohl an der Quelle unterbunden als auch zur Laufzeit abgefangen.
+\\
+Für die Entwicklung ohne verfügbare Zielhardware wurden alle hardwarenahen Knoten mit einem Simulationsrückfall ausgestattet. Beim Start wird die Verfügbarkeit der GPIO-Hardware aktiv geprüft, indem der Gerätezugriff probeweise geöffnet wird. Schlägt die Prüfung fehl, läuft der Knoten in einem Simulationsmodus weiter, in dem Hardwarezugriffe übersprungen und durch eine entsprechende Protokollmeldung kenntlich gemacht werden. Das Gesamtsystem bleibt dadurch auf beliebigen Entwicklungsrechnern lauffähig und testbar, was dem Prinzip der kontrollierten Degradation entspricht. Dies war eine wesentliche Voraussetzung für die arbeitsteilige Entwicklung im Team.
+% =====================================================================
+% Ende Kapitel (Autorin: Sonia Sinaci)
+% =====================================================================
