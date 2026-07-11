@@ -1,6 +1,6 @@
 \section{Ist-Zustand}
 \label{sec:ist-zustand}
-\subsection{App-Steuerung (Elena)}
+\subsection{App-Steuerung}
 Die App besitzt bereits eine theoretische Steuerung über die Bewegungssensoren des Smartphones. Dafür wird in gyroscope\_data.dart die Bibliothek motion\_sensors verwendet. Das Widget getGyroscope liest bereits die Werte für Pitch, Roll und Yaw aus.
 \\
 Sobald neue Sensordaten eintreffen, werden Pitch und Roll auf den Bereich von -1.0 bis 1.0 begrenzt. Anschließend werden diese Werte direkt als Steuerbefehle über den WebSocketManager an das Fahrzeug gesendet. Dabei soll der Roll-Wert die Geschwindigkeit steuern und der Pitch-Wert für den Lenkwinkel verwendet werden. Der Yaw-Wert wird für die Steuerung nicht verwendet. Zusätzlich zeigt die App die aktuellen Sensorwerte für Pitch, Roll und Yaw auf der Oberfläche an.
