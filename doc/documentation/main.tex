@@ -12,6 +12,7 @@
 \usepackage{float}
 \usepackage{hyperref}
 \usepackage{listings}
+\lstdefinestyle{bashstyle}{ language=bash, basicstyle=\ttfamily\small, keywordstyle=\color{blue}, commentstyle=\color{green!50!black}, stringstyle=\color{red}, numbers=left, numberstyle=\tiny\color{gray}, stepnumber=1, numbersep=8pt, frame=single, breaklines=true, breakatwhitespace=true, showstringspaces=false, tabsize=2, captionpos=b }
 \usepackage{color}
 \usepackage[
     backend=biber,
@@ -38,6 +39,7 @@
 \addbibresource{literatur/T2000.bib}
 \addbibresource{literatur/scott.bib}
 \addbibresource{literatur/sonia.bib}
+\usepackage{tabularx}
 
 
 \definecolor{lightgray}{rgb}{0.95,0.95,0.95}
@@ -61,11 +63,13 @@
 \thispagestyle{empty}
 \include{pages/12_inhaltsverzeichnis}
 \pagenumbering{Roman}
+\newpage
 
 \input{Abkuerzungen}
 \addcontentsline{toc}{section}{Abkürzungsverzeichnis}
 \glsaddall[types={\acronymtype}]
 \printglossary[type=\acronymtype,title=Abkürzungsverzeichnis]
+\newpage
 
 \addcontentsline{toc}{section}{Abbildungsverzeichnis}
 \listoffigures
@@ -82,13 +86,15 @@
 \input{chapters/Ist_Zustand.tex} \newpage
 \input{chapters/Technikkorridor.tex} \newpage
 \input{chapters/Methodik.tex} \newpage
+\input{chapters/Experimentelles_Evaluationsdesign.tex} \newpage
 \input{chapters/Autoumbau.tex} \newpage
-\input{chapters/Autonomes_Fahren.tex} \newpage
 \input{chapters/Containerisierung_Systemstart.tex} \newpage
 \input{chapters/Implementierung_Autonomes_Fahren.tex} \newpage
 \input{chapters/Aktualisierung_App.tex} \newpage
 \input{chapters/Ergebnisse.tex} \newpage
+\input{chapters/Diskussion.tex} \newpage
 \input{chapters/Fazit_und_Ausblick.tex} \newpage
+
 
 
 \cleardoublepage
@@ -98,10 +104,13 @@
 % Hinweis: Der Platzhalter \cite{dummyhidden} und der Satz "Es wurden keine
 % Literaturverweise im Dokument gesetzt." wurden entfernt, da das Dokument
 % inzwischen echte Literaturverweise enthaelt.
+
 \addcontentsline{toc}{section}{Literaturverzeichnis}
 \printbibliography[title={Literaturverzeichnis}]
 
 
-
 \appendix
+\addcontentsline{toc}{section}{Anhang}
+\input{chapters/Anhang.tex}
+
 \end{document}

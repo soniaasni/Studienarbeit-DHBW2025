@@ -1,6 +1,8 @@
 \section{Fazit und Ausblick}
 \label{sec:fazit_ausblick}
 
+Die Evaluation zeigte, dass das entwickelte System Hindernisse mit einer hohen Erfolgsquote erkennen und in den meisten Testläufen erfolgreich umfahren konnte. Damit konnte nachgewiesen werden, dass die Kombination aus \gls{lidar}-basierter Hinderniserkennung, Gauß-basierter Trajektorienplanung und \gls{ros}-basierter Systemarchitektur eine praxistaugliche Grundlage für autonomes Fahren auf ressourcenbeschränkter Embedded-Hardware darstellt.
+
 % =====================================================================
 % Beginn Beitrag (Autorin: Sonia Sinaci)
 % =====================================================================
@@ -8,22 +10,22 @@
 \label{sec:ausblick_sonia}
 Die implementierte \gls{lidar}-Verarbeitungskette, die Sicherheitsfunktion, die Visualisierung und die Container-Infrastruktur bilden eine tragfähige Grundlage, eröffnen jedoch an mehreren Stellen konkrete und wissenschaftlich lohnende Weiterentwicklungspfade. Tabelle~\ref{tab:weiterentwicklungspfade} ordnet die Pfade ein. Die folgenden Abschnitte beschreiben zu jedem Pfad, wie eine Umsetzung konkret erfolgen könnte, und begründen, warum gerade dieser Weg gewählt werden sollte.
 \begin{table}[h!]
-\centering
-\small
-\begin{tabular}{p{4.2cm} p{4.4cm} p{5.6cm}}
-\toprule
-\textbf{Weiterentwicklungspfad} & \textbf{Baut auf auf} & \textbf{Erster konkreter Schritt} \\
-\midrule
-Zeitliche Filterung und Clusterbildung & Aufbereitungsstufe des Treibers & Ringpuffer über die letzten 3 bis 5 Scans, gleitender Median je Winkelklasse \\
-Live-Heatmaps und Belegungsgitter & Topic /scan, Flutter-Rasteranzeige & Knoten mit Ray Casting (Bresenham) und Log-Odds-Aktualisierung \\
-SLAM und Lokalisierung & Stabile LaserScan-Publikation & Integration von slam\_toolbox, Aufbau des TF-Baums \\
-Erweiterte Sicherheitsfunktion & safety\_stop-Knoten & Geschwindigkeitsabhängige Auslösedistanz aus Bremsversuchen bestimmen \\
-Automatisierte Laufdaten-Auswertung & Protokollierungskonzept & Aufzeichnung aller Topics mit rosbag2 je Testlauf \\
-CI/CD für Container & Multi-Stage-Build & GitHub-Actions-Workflow mit docker buildx für ARM64 \\
-\bottomrule
-\end{tabular}
-\caption{Weiterentwicklungspfade im Überblick}
-\label{tab:weiterentwicklungspfade}
+    \centering
+    \small
+    \begin{tabular}{p{4.2cm} p{4.4cm} p{5.6cm}}
+        \toprule
+        \textbf{Weiterentwicklungspfad}        & \textbf{Baut auf auf}              & \textbf{Erster konkreter Schritt}                                            \\
+        \midrule
+        Zeitliche Filterung und Clusterbildung & Aufbereitungsstufe des Treibers    & Ringpuffer über die letzten 3 bis 5 Scans, gleitender Median je Winkelklasse \\
+        Live-Heatmaps und Belegungsgitter      & Topic /scan, Flutter-Rasteranzeige & Knoten mit Ray Casting (Bresenham) und Log-Odds-Aktualisierung               \\
+        SLAM und Lokalisierung                 & Stabile LaserScan-Publikation      & Integration von slam\_toolbox, Aufbau des TF-Baums                           \\
+        Erweiterte Sicherheitsfunktion         & safety\_stop-Knoten                & Geschwindigkeitsabhängige Auslösedistanz aus Bremsversuchen bestimmen        \\
+        Automatisierte Laufdaten-Auswertung    & Protokollierungskonzept            & Aufzeichnung aller Topics mit rosbag2 je Testlauf                            \\
+        CI/CD für Container                    & Multi-Stage-Build                  & GitHub-Actions-Workflow mit docker buildx für ARM64                          \\
+        \bottomrule
+    \end{tabular}
+    \caption{Weiterentwicklungspfade im Überblick}
+    \label{tab:weiterentwicklungspfade}
 \end{table}
 
 \subsubsection{Weiterentwicklung der LiDAR-Datenverarbeitung}
@@ -50,7 +52,7 @@ Die implementierte Not-Halt-Funktion arbeitet mit einem festen Abstandsschwellen
 \\
 Erstens ein geschwindigkeitsabhängiger Anhalteweg: Statt eines festen Schwellenwerts sollte die Auslösedistanz aus der aktuellen Geschwindigkeit berechnet werden, näherungsweise als
 \[
-d_{\mathrm{stopp}} = v \cdot t_r + \frac{v^2}{2\,a_{\mathrm{max}}},
+    d_{\mathrm{stopp}} = v \cdot t_r + \frac{v^2}{2\,a_{\mathrm{max}}},
 \]
 wobei $t_r$ die Reaktionszeit des Systems aus Scanrate, Verarbeitungs- und Stellzeit und $a_{\mathrm{max}}$ die maximal erreichbare Verzögerung bezeichnet. Die Begründung liegt auf der Hand: Ein fester Schwellenwert ist bei niedriger Geschwindigkeit unnötig konservativ und bei hoher Geschwindigkeit unter Umständen zu knapp. Beide Größen ließen sich experimentell auf dem Fahrzeug bestimmen. Die Reaktionszeit folgt unmittelbar aus den bereits protokollierten Laufdaten, die Verzögerung aus Bremsversuchen mit Distanzmessung.
 \\
@@ -64,7 +66,7 @@ Die bislang manuell durchgeführte Auswertung der Laufdaten ließe sich zu einer
 Besonders wertvoll wäre die Nutzung aufgezeichneter Läufe als Regressionstests: Aufgezeichnete Scans können in der Entwicklungsumgebung wieder abgespielt werden, sodass Änderungen an Filterung, Hinderniserkennung oder Sicherheitslogik reproduzierbar gegen identische Eingabedaten geprüft werden können, ohne dass das physische Fahrzeug benötigt wird. Die Begründung für diesen Ansatz liegt in der bereits umgesetzten Trennung von Hardware und Logik: Da alle Konsumenten ausschließlich auf dem Topic \texttt{/scan} arbeiten, ist es für sie unerheblich, ob die Daten vom realen Sensor oder aus einer Aufzeichnung stammen. Damit würde diese Trennung konsequent bis in die Qualitätssicherung fortgeführt.
 
 \subsubsection{Automatisierung der Container-Infrastruktur}
-Der eingeführte Multi-Stage-Build wird bislang manuell angestoßen. Der folgerichtige Ausbau ist eine kontinuierliche Integrationskette, beispielsweise über GitHub Actions: Bei jeder Änderung würden die ROS-Pakete automatisch gebaut, die Container-Images über \texttt{docker buildx} nativ für die Zielarchitektur ARM64 erzeugt und in einer Registry abgelegt. Das Fahrzeug könnte fertige Images dann nur noch beziehen, statt sie lokal zu bauen, was die Inbetriebnahmezeit auf dem Raspberry~Pi erheblich verkürzen würde. Das Bauen auf dem Pi selbst hat sich in den Testläufen als der zeitaufwendigste Einzelschritt erwiesen. Ergänzend sollten Gesundheitsprüfungen (Healthchecks) im Compose-Manifest definiert werden, damit der Zustand der Knoten von außen überwachbar ist, sowie getrennte Compose-Profile für Simulations- und Fahrzeugbetrieb, um die bestehenden Simulationsrückfälle explizit zu konfigurieren. Perspektivisch ließe sich der Ressourcenbedarf auf dem Zielsystem weiter senken, indem die Python-Knoten als komponierbare Knoten (Composable Nodes) in einem gemeinsamen Prozess zusammengeführt werden, wodurch der Kommunikationsaufwand zwischen den Knoten entfällt.
+Der eingeführte Multi-Stage-Build wird bislang manuell angestoßen. Der folgerichtige Ausbau ist eine kontinuierliche Integrationskette, beispielsweise über GitHub Actions: Bei jeder Änderung würden die ROS-Pakete automatisch gebaut, die Container-Images über \texttt{docker buildx} nativ für die Zielarchitektur \gls{arm64} erzeugt und in einer Registry abgelegt. Das Fahrzeug könnte fertige Images dann nur noch beziehen, statt sie lokal zu bauen, was die Inbetriebnahmezeit auf dem Raspberry~Pi erheblich verkürzen würde. Das Bauen auf dem Pi selbst hat sich in den Testläufen als der zeitaufwendigste Einzelschritt erwiesen. Ergänzend sollten Gesundheitsprüfungen (Healthchecks) im Compose-Manifest definiert werden, damit der Zustand der Knoten von außen überwachbar ist, sowie getrennte Compose-Profile für Simulations- und Fahrzeugbetrieb, um die bestehenden Simulationsrückfälle explizit zu konfigurieren. Perspektivisch ließe sich der Ressourcenbedarf auf dem Zielsystem weiter senken, indem die Python-Knoten als komponierbare Knoten (Composable Nodes) in einem gemeinsamen Prozess zusammengeführt werden, wodurch der Kommunikationsaufwand zwischen den Knoten entfällt.
 
 \subsubsection{Zusammenfassende Einordnung}
 Die genannten Pfade bauen sämtlich unmittelbar auf den geschaffenen Grundlagen auf: Die zeitliche Filterung und die Clusterbildung erweitern die bestehende Aufbereitungsstufe, Live-Heatmaps und SLAM setzen auf dem stabilen Scan-Topic auf, die erweiterte Sicherheitsfunktion verfeinert die vorhandene Schutzschicht, und die Automatisierung der Infrastruktur führt den eingeschlagenen Weg der Reproduzierbarkeit konsequent fort. Die Arbeit hinterlässt damit nicht nur ein funktionsfähiges System, sondern ein anschlussfähiges Fundament für wissenschaftliche Folgearbeiten.

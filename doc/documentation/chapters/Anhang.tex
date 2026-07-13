@@ -1,0 +1,105 @@
+\section{Anhang}
+\begin{lstlisting}[style=bashstyle,caption={Einrichtung eines WLAN-Access-Points auf einem Raspberry Pi 4 mit Ubuntu Server},label={lst:raspi_setup}]
+#!/bin/bash
+# ================================================================
+# Raspberry Pi 4 + Ubuntu Server
+# Einrichtung eines WLAN-Access-Points mit hostapd und dnsmasq
+#
+# HINWEISE:
+# - Dieses Skript dient als dokumentierte Installationsanleitung.
+# - Einige Schritte erfordern manuelle Kontrolle der Konfigurationsdateien.
+# - Vor Änderungen immer prüfen, wie die vorhandene Konfiguration aussieht.
+# - Die Netplan-Datei kann anders heißen als 01-rpi.yaml.
+# ================================================================
+
+sudo apt update && sudo apt upgrade -y
+
+sudo apt install -y hostapd dnsmasq git gpiod libgpiod-dev
+
+sudo reboot
+
+sudo systemctl stop hostapd
+sudo systemctl stop dnsmasq
+
+# Netplan-Datei prüfen
+ls -l /etc/netplan/
+sudo nano /etc/netplan/01-rpi.yaml
+# Inhalt:
+#
+# network:
+#   version: 2
+#   renderer: networkd
+#
+#   ethernets:
+#     eth0:
+#       dhcp4: true
+
+sudo chmod 600 /etc/netplan/01-rpi.yaml
+sudo netplan apply
+
+# wlan0 mit statischer IP versehen
+sudo nano /etc/systemd/network/08-wlan0.network
+# Inhalt:
+#
+# [Match]
+# Name=wlan0
+#
+# [Network]
+# Address=192.168.4.1/24
+
+sudo systemctl restart systemd-networkd
+
+# dnsmasq konfigurieren
+sudo mv /etc/dnsmasq.conf /etc/dnsmasq.conf.orig
+sudo nano /etc/dnsmasq.conf
+# Inhalt:
+#
+# interface=wlan0
+# bind-interfaces
+# dhcp-range=192.168.4.20,192.168.4.100,255.255.255.0,12h
+# domain-needed
+# bogus-priv
+
+# hostapd konfigurieren
+sudo nano /etc/hostapd/hostapd.conf
+# Inhalt:
+#
+# interface=wlan0
+# driver=nl80211
+# ssid=raspberry
+# hw_mode=g
+# channel=7
+#
+# auth_algs=1
+# wpa=2
+# wpa_passphrase=raspberry
+# wpa_key_mgmt=WPA-PSK
+# rsn_pairwise=CCMP
+#
+# country_code=DE
+# ieee80211n=1
+
+sudo nano /etc/default/hostapd
+# Inhalt:
+#
+# DAEMON_CONF="/etc/hostapd/hostapd.conf"
+
+# Dienste aktivieren
+sudo systemctl unmask hostapd
+sudo systemctl enable hostapd dnsmasq
+
+sudo systemctl start hostapd
+sudo systemctl start dnsmasq
+
+# Status prüfen
+systemctl status hostapd
+systemctl status dnsmasq
+
+# GPIO-Controller prüfen
+gpioinfo
+
+# Erwartete Ergebnisse:
+# - hostapd: active (running)
+# - dnsmasq: active (running)
+# - gpioinfo liefert die erwarteten GPIO-Chips
+\end{lstlisting}

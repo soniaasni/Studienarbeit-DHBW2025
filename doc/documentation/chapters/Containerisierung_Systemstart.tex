@@ -3,7 +3,7 @@
 % =====================================================================
 \section{Containerisierung und Systemstart}
 \label{sec:containerisierung_systemstart}
-Das gesamte ROS~2 Backend wird in Docker-Containern \cite{merkel2014docker} auf dem Raspberry~Pi betrieben. Die Containerisierung verfolgt drei Ziele: eine reproduzierbare Laufzeitumgebung unabhängig vom Zustand des Host-Systems, identische Umgebungen auf Entwicklungsrechnern und Zielsystem sowie einen deterministischen Systemstart. Dieses Kapitel beschreibt die Ausgangslage mit ihren Problemen sowie die umgesetzten Lösungen.
+Das gesamte \gls{ros} Backend wird in Docker-Containern \cite{merkel2014docker} auf dem Raspberry~Pi betrieben. Die Containerisierung verfolgt drei Ziele: eine reproduzierbare Laufzeitumgebung unabhängig vom Zustand des Host-Systems, identische Umgebungen auf Entwicklungsrechnern und Zielsystem sowie einen deterministischen Systemstart. Dieses Kapitel beschreibt die Ausgangslage mit ihren Problemen sowie die umgesetzten Lösungen.
 
 \subsection{Ausgangslage und Probleme}
 \label{sec:container_probleme}
@@ -19,10 +19,10 @@ Schließlich stand die Zielhardware, also das Fahrzeug mit Raspberry~Pi, Sensori
 \label{sec:multistage_build}
 Zur Lösung des Größenproblems wurde der Bauprozess auf einen zweistufigen Multi-Stage-Build umgestellt, den Abbildung~\ref{fig:docker_multistage} veranschaulicht. Die erste Stufe, der Builder, enthält die vollständige Werkzeugkette und übersetzt die ROS-Pakete mit \texttt{colcon}. Zwischenartefakte wie Build- und Log-Verzeichnisse werden anschließend entfernt. Die zweite Stufe, die Runtime, basiert auf dem schlanken ROS-Basisimage und übernimmt ausschließlich die installierten Artefakte der Builder-Stufe. Ergänzend wurde eine \texttt{.dockerignore} eingeführt, damit nicht benötigte Dateien den Build-Kontext nicht aufblähen. Diese Struktur reduziert sowohl die Imagegröße als auch die Bauzeit deutlich und trennt Bau- und Laufzeitumgebung konzeptionell sauber. Die zuvor beobachteten Beeinträchtigungen der Anwendung durch das übergroße Image entfallen damit.
 \begin{figure}[h!]
-	\centering
-	\includegraphics[width=\textwidth]{images/Docker_MultiStage_Build.png}
-	\caption[Zweistufiger Multi-Stage-Build der Container-Images]{Zweistufiger Multi-Stage-Build der Container-Images}
-	\label{fig:docker_multistage}
+    \centering
+    \includegraphics[width=\textwidth]{images/Docker_MultiStage_Build.png}
+    \caption[Zweistufiger Multi-Stage-Build der Container-Images]{Zweistufiger Multi-Stage-Build der Container-Images}
+    \label{fig:docker_multistage}
 \end{figure}
 
 \subsection{Deterministischer Systemstart}

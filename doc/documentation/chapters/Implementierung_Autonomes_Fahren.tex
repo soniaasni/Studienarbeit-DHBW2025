@@ -5,24 +5,24 @@
 % =====================================================================
 \subsection{Datenverarbeitung}
 \label{sec:datenverarbeitung_sonia}
-Die Ist-Analyse der Sensorik hat gezeigt, dass zu Projektbeginn keine operative Anbindung realer \gls{lidar}-Hardware existierte. Sämtliche \gls{lidar}-bezogenen Komponenten arbeiteten ausschließlich auf statischen, vorab aufgezeichneten Datensätzen. Auf Basis dieses Befundes wurde eine vollständige Verarbeitungskette entworfen und implementiert, die den physischen Sensor in das ROS~2 System \cite{macenski2022ros2} integriert. Die Verarbeitungskette gliedert sich in drei Stufen: die Anbindung des Sensors über einen Treiberknoten, die Aufbereitung der Rohdaten in ein standardisiertes Nachrichtenformat sowie die sicherheitsgerichtete Auswertung der Daten im Fahrbetrieb.
+Die Ist-Analyse der Sensorik hat gezeigt, dass zu Projektbeginn keine operative Anbindung realer \gls{lidar}-Hardware existierte. Sämtliche \gls{lidar}-bezogenen Komponenten arbeiteten ausschließlich auf statischen, vorab aufgezeichneten Datensätzen. Auf Basis dieses Befundes wurde eine vollständige Verarbeitungskette entworfen und implementiert, die den physischen Sensor in das \gls{ros} System \cite{macenski2022ros2} integriert. Die Verarbeitungskette gliedert sich in drei Stufen: die Anbindung des Sensors über einen Treiberknoten, die Aufbereitung der Rohdaten in ein standardisiertes Nachrichtenformat sowie die sicherheitsgerichtete Auswertung der Daten im Fahrbetrieb.
 
 \subsubsection{Wechsel von der Ultraschallsensorik auf den LiDAR}
 Ursprünglich war der Ultraschallsensor als zentraler Abstandssensor des Fahrzeugs vorgesehen. Im Projektverlauf zeigte sich jedoch, dass die vorhandene Sensorik weitgehend nicht funktionierte, und die Ursachenanalyse ergab zwei voneinander unabhängige Probleme.
 \\
-Das erste Problem betraf die GPIO-Ansteuerung insgesamt: Mit der Aktualisierung des Betriebssystems auf dem Raspberry~Pi brach die gesamte GPIO-Ansteuerung des Fahrzeugs, sodass Motorsteuerung, Lenkung, Status-LED und Ultraschallsensor nicht mehr funktionsfähig waren. Ursache war der Wechsel der Bibliothek \texttt{libgpiod} auf die Hauptversion~2, die einen bewusst inkompatiblen Schnittstellenbruch vollzieht. Die bis dahin genutzten Konstrukte \texttt{LineRequest()}, \texttt{get\_line()} und \texttt{LINE\_REQ\_DIR\_OUT} existieren in der neuen Version nicht mehr. Die Analyse der neuen Bibliotheksversion ergab ein grundlegend verändertes Programmiermodell: Statt einzelne Leitungsobjekte zu beziehen und separat zu konfigurieren, werden alle benötigten Leitungen in einem Aufruf mit ihren Einstellungen reserviert. Zusätzlich zeigte sich, dass der GPIO-Chip nicht mehr über den Kurznamen, sondern über den vollständigen Gerätepfad \texttt{/dev/gpiochip4} angesprochen werden muss. Zur Lösung wurden alle betroffenen Knoten, also Fahrzeugcontroller, Bridge und Ultraschallsensor, auf das neue Modell migriert: Die Leitungen werden zentral über \texttt{request\_lines()} mit \texttt{LineSettings} für Richtung und Anfangszustand reserviert, Pegel werden über die expliziten Zustände \texttt{Value.ACTIVE} und \texttt{Value.INACTIVE} gesetzt. Die im Projekt selbst implementierte Software-PWM zur Ansteuerung der Motoren wurde von der Arbeit auf einzelnen Leitungsobjekten auf das Paar aus Leitungsanforderung und Pin-Offset umgestellt. Die Migration wurde so gestaltet, dass das Verhalten der Fahrzeugsteuerung nach außen unverändert blieb.
+Das erste Problem betraf die \gls{gpio}-Ansteuerung insgesamt: Mit der Aktualisierung des \gls{os} auf dem Raspberry~Pi brach die gesamte \gls{gpio}-Ansteuerung des Fahrzeugs, sodass Motorsteuerung, Lenkung, Status-LED und Ultraschallsensor nicht mehr funktionsfähig waren. Ursache war der Wechsel der Bibliothek \texttt{libgpiod} auf die Hauptversion~2, die einen bewusst inkompatiblen Schnittstellenbruch vollzieht. Die bis dahin genutzten Konstrukte \texttt{LineRequest()}, \texttt{get\_line()} und \texttt{LINE\_REQ\_DIR\_OUT} existieren in der neuen Version nicht mehr. Die Analyse der neuen Bibliotheksversion ergab ein grundlegend verändertes Programmiermodell: Statt einzelne Leitungsobjekte zu beziehen und separat zu konfigurieren, werden alle benötigten Leitungen in einem Aufruf mit ihren Einstellungen reserviert. Zusätzlich zeigte sich, dass der \gls{gpio}-Chip nicht mehr über den Kurznamen, sondern über den vollständigen Gerätepfad \texttt{/dev/gpiochip4} angesprochen werden muss. Zur Lösung wurden alle betroffenen Knoten, also Fahrzeugcontroller, Bridge und Ultraschallsensor, auf das neue Modell migriert: Die Leitungen werden zentral über \texttt{request\_lines()} mit \texttt{LineSettings} für Richtung und Anfangszustand reserviert, Pegel werden über die expliziten Zustände \texttt{Value.ACTIVE} und \texttt{Value.INACTIVE} gesetzt. Die im Projekt selbst implementierte Software-PWM zur Ansteuerung der Motoren wurde von der Arbeit auf einzelnen Leitungsobjekten auf das Paar aus Leitungsanforderung und Pin-Offset umgestellt. Die Migration wurde so gestaltet, dass das Verhalten der Fahrzeugsteuerung nach außen unverändert blieb.
 \\
-Das zweite Problem betraf den Ultraschallsensor selbst: Auch nach der Migration lieferte er keine gültigen Messwerte, und die Reservierung des Trigger-Pins schlug mit einer Belegt-Meldung fehl. Die systematische Prüfung der Pinbelegung des Raspberry~Pi ergab, dass der zunächst gewählte GPIO~7 hardwareseitig dem SPI-Subsystem als Chip-Select-Leitung zugeordnet ist und vom Betriebssystem belegt wird. Ein Zugriff über die GPIO-Schnittstelle ist damit blockiert. Das Trigger-Signal wurde daher auf den frei verfügbaren GPIO~26 (physischer Pin~37) verlegt und die Verdrahtung entsprechend angepasst. Ergänzend wurden die Zeitsteuerung der Messung überarbeitet und eine Diagnoseausgabe für ungültige Messungen ergänzt, um künftige Fehlerbilder schneller eingrenzen zu können.
+Das zweite Problem betraf den Ultraschallsensor selbst: Auch nach der Migration lieferte er keine gültigen Messwerte, und die Reservierung des Trigger-Pins schlug mit einer Belegt-Meldung fehl. Die systematische Prüfung der Pinbelegung des Raspberry~Pi ergab, dass der zunächst gewählte GPIO~7 hardwareseitig dem SPI-Subsystem als Chip-Select-Leitung zugeordnet ist und vom Betriebssystem belegt wird. Ein Zugriff über die \gls{gpio}-Schnittstelle ist damit blockiert. Das Trigger-Signal wurde daher auf den frei verfügbaren \gls{gpio}~26 (physischer Pin~37) verlegt und die Verdrahtung entsprechend angepasst. Ergänzend wurden die Zeitsteuerung der Messung überarbeitet und eine Diagnoseausgabe für ungültige Messungen ergänzt, um künftige Fehlerbilder schneller eingrenzen zu können.
 \\
 Trotz dieser Reparaturen blieb die Ultraschallsensorik konzeptionell begrenzt: Sie liefert nur einen einzelnen Distanzwert in Blickrichtung und erlaubt damit weder eine Richtungszuordnung von Hindernissen noch eine Umgebungserfassung. Vor diesem Hintergrund wurde der Wechsel auf den \gls{lidar} als primären Sensor für die Hinderniserkennung vollzogen: Der \gls{lidar} erfasst die Umgebung in einer vollen 360-Grad-Drehung mit hunderten Messpunkten je Umlauf und gilt in der Literatur als Schlüsselsensorik für das autonome Fahren \cite{li2020lidar}. Mit der Inbetriebnahme des \gls{lidar}-Treibers wurde der Ultraschallknoten deaktiviert. Er bleibt als redundante Rückfallebene für künftige Erweiterungen im Projekt erhalten.
 
 \subsubsection{Architektur der Verarbeitungskette}
-Die Architektur folgt dem Prinzip der strikten Trennung von Treiber- und Anwendungslogik. Der Treiberknoten \texttt{lidar\_driver} ist ausschließlich für die Kommunikation mit der Hardware und die Publikation der Messdaten zuständig. Er trifft keinerlei Annahmen über die nachgelagerten Konsumenten. Die Verteilung der Daten erfolgt über das Publisher-Subscriber-Muster von ROS~2 \cite{maruyama2016ros2} auf dem Topic \texttt{/scan} im standardisierten Nachrichtentyp \texttt{sensor\_msgs/LaserScan}. Nachgelagerte Knoten, etwa die Hindernisvermeidung (siehe Abschnitt~\ref{sec:hinderniserkennung_elena}) oder die Not-Halt-Funktion, abonnieren dieses Topic unabhängig voneinander. Diese Entkopplung erwies sich im Projektverlauf als tragfähig: Die gaußbasierte Ausweichlogik konnte ohne Änderungen am Treiber auf derselben Dateninfrastruktur aufgesetzt werden. Abbildung~\ref{fig:ros2_verarbeitungskette} zeigt die Komponenten und Datenflüsse im Überblick.
+Die Architektur folgt dem Prinzip der strikten Trennung von Treiber- und Anwendungslogik. Der Treiberknoten \texttt{lidar\_driver} ist ausschließlich für die Kommunikation mit der Hardware und die Publikation der Messdaten zuständig. Er trifft keinerlei Annahmen über die nachgelagerten Konsumenten. Die Verteilung der Daten erfolgt über das Publisher-Subscriber-Muster von \gls{ros} \cite{maruyama2016ros2} auf dem Topic \texttt{/scan} im standardisierten Nachrichtentyp \texttt{sensor\_msgs/LaserScan}. Nachgelagerte Knoten, etwa die Hindernisvermeidung (siehe Abschnitt~\ref{sec:hinderniserkennung_elena}) oder die Not-Halt-Funktion, abonnieren dieses Topic unabhängig voneinander. Diese Entkopplung erwies sich im Projektverlauf als tragfähig: Die gaußbasierte Ausweichlogik konnte ohne Änderungen am Treiber auf derselben Dateninfrastruktur aufgesetzt werden. Abbildung~\ref{fig:ros2_verarbeitungskette} zeigt die Komponenten und Datenflüsse im Überblick.
 \begin{figure}[h!]
-	\centering
-	\includegraphics[width=\textwidth]{images/ROS2_Verarbeitungskette_LiDAR.png}
-	\caption[Komponenten und Datenflüsse der ROS 2 Verarbeitungskette]{Komponenten und Datenflüsse der ROS 2 Verarbeitungskette}
-	\label{fig:ros2_verarbeitungskette}
+    \centering
+    \includegraphics[width=\textwidth]{images/ROS2_Verarbeitungskette_LiDAR.png}
+    \caption[Komponenten und Datenflüsse der ROS 2 Verarbeitungskette]{Komponenten und Datenflüsse der ROS 2 Verarbeitungskette}
+    \label{fig:ros2_verarbeitungskette}
 \end{figure}
 
 \subsubsection{Treiberknoten und Aufbereitung der Scandaten}
@@ -30,26 +30,26 @@ Der Treiberknoten liest den rotierenden 2D-Laserscanner (RPLIDAR) über die seri
 \\
 Die Rohmessungen des Sensors liegen als Tripel aus Signalqualität, Winkel und Distanz vor und treffen in unregelmäßiger Winkelfolge ein. Für die Weiterverarbeitung werden sie in ein regelmäßiges Raster aus 360 Winkelklassen mit einem Grad pro Klasse überführt. Fallen mehrere Messungen in dieselbe Klasse, wird die minimale Distanz übernommen, da für die Kollisionsvermeidung stets der nächstliegende Punkt maßgeblich ist. Zwei Filterstufen sichern die Datenqualität: Messungen mit einer Signalqualität von null sowie Distanzen außerhalb des plausiblen Bereichs von 0,15~m bis 12~m werden verworfen. Nicht belegte Winkelklassen werden als unendlich markiert und damit explizit als Fehlmessung ohne Treffer gekennzeichnet. Diese Konvention setzt die Erkenntnis aus der Datenanalyse um, dass nicht-finite Werte ein regulärer Bestandteil von \gls{lidar}-Messungen sind und definiert behandelt werden müssen. Das Ergebnis wird mit den vollständigen Metadaten des Nachrichtenformats, also Winkelbereich, Winkelinkrement, Messbereich und Scandauer, mit einer Rate von etwa 5,5 Umdrehungen pro Sekunde publiziert.
 
-\subsubsection{Stabilisierung der seriellen LiDAR-Kommunikation}
+\subsubsection{Stabilisierung der seriellen \gls{lidar}-Kommunikation}
 Die Inbetriebnahme des realen \gls{lidar}-Sensors scheiterte zunächst wiederholt: Der Verbindungsaufbau brach mit Protokollfehlern, Parse-Fehlern und scheinbaren Zeitüberschreitungen ab, obwohl der Sensor physisch einwandfrei arbeitete. Das Fehlerbild war nicht deterministisch reproduzierbar, was die Diagnose erheblich erschwerte.
 \\
 Die schrittweise Diagnose anhand der protokollierten Laufdaten ergab drei sich überlagernde Ursachen. Erstens verblieben nach abgebrochenen Scans Restbytes im Empfangspuffer der seriellen Schnittstelle, die bei der nächsten Anfrage als Antwortdaten fehlinterpretiert wurden und das Protokoll desynchronisierten. Zweitens schaltet das Öffnen des seriellen Ports über die DTR-Steuerleitung den Motor des Sensors ungewollt ein, wodurch bereits vor dem ersten Kommando Scandaten eintrafen. Drittens war der Standard-Timeout der Treiberbibliothek von einer Sekunde für einzelne Kommandos des Sensors zu knapp bemessen, sodass fälschlich Zeitüberschreitungen gemeldet wurden.
 \\
 Die Lösung kombiniert mehrere Maßnahmen zu einem definierten, synchronisierten Verbindungsaufbau, den Abbildung~\ref{fig:lidar_verbindungsaufbau} zeigt. Der Empfangspuffer wird an fünf festgelegten Protokollpunkten geleert: unmittelbar nach dem Öffnen des Ports, nach dem kontrollierten Stoppen von Scan und Motor mit anschließender Auslaufwartezeit, nach der Geräteabfrage, nach der Gesundheitsabfrage sowie unmittelbar vor dem Start des Scanbetriebs. Die Abfragen der Geräteinformationen über \texttt{get\_info()} und des Gesundheitszustands über \texttt{get\_health()} dienen dabei bewusst als Synchronisationspunkte, da sie aus einfachen, eindeutig zuordenbaren Anfrage-Antwort-Paaren bestehen. Der Timeout wurde auf drei Sekunden erhöht, und für Motorstart und Motorauslauf wurden definierte Wartezeiten eingeführt. Da verschiedene Versionen der Treiberbibliothek das interne Objekt der seriellen Schnittstelle unter unterschiedlichen Attributnamen führen, wurde der Zugriff versionstolerant über eine Liste bekannter Attributnamen implementiert. Mit diesen Maßnahmen wurde der Verbindungsaufbau vollständig stabil und reproduzierbar. Tritt in einem beliebigen Schritt dennoch ein Fehler auf, wird die Verbindung getrennt und der Aufbau nach drei Sekunden Wartezeit wieder von Schritt~1 an begonnen. Dieser Pfad ist in Abbildung~\ref{fig:lidar_verbindungsaufbau} rot gestrichelt von unten nach oben eingezeichnet.
 \begin{figure}[h!]
-	\centering
-	\includegraphics[width=0.95\textwidth]{images/LiDAR_Verbindungsaufbau.png}
-	\caption[Synchronisierter Verbindungsaufbau des LiDAR-Treibers]{Synchronisierter Verbindungsaufbau des LiDAR-Treibers mit Flush-Strategie. Der rot gestrichelte Fehlerpfad führt vom Abbruchpunkt zurück zu Schritt~1}
-	\label{fig:lidar_verbindungsaufbau}
+    \centering
+    \includegraphics[width=0.95\textwidth]{images/LiDAR_Verbindungsaufbau.png}
+    \caption[Synchronisierter Verbindungsaufbau des LiDAR-Treibers]{Synchronisierter Verbindungsaufbau des LiDAR-Treibers mit Flush-Strategie. Der rot gestrichelte Fehlerpfad führt vom Abbruchpunkt zurück zu Schritt~1}
+    \label{fig:lidar_verbindungsaufbau}
 \end{figure}
 
 \subsubsection{Sicherheitsgerichtete Auswertung: Not-Halt-Funktion}
 Für den manuellen Fahrbetrieb wurde eine eigenständige Sicherheitsschicht entworfen, der Knoten \texttt{safety\_stop}. Er ist als Zwischeninstanz zwischen die WebSocket-Bridge und den Fahrzeugcontroller geschaltet: Die Bridge publiziert Nutzerbefehle auf dem Topic \texttt{vehicle\_command\_raw}, der Sicherheitsknoten reicht sie geprüft auf \texttt{vehicle\_command} an den Controller weiter. Vorwärtsfahrbefehle passieren die Schicht nur dann unverändert, wenn der Frontsektor des Laserscans von plus minus 30~Grad um die Fahrzeuglängsachse frei ist. Wird ein Hindernis innerhalb von 1,0~m erkannt, begrenzt der Knoten die Geschwindigkeit auf null. Abbildung~\ref{fig:zustandsdiagramm_nothalt} fasst das Zustandsverhalten zusammen.
 \begin{figure}[h!]
-	\centering
-	\includegraphics[width=\textwidth]{images/Zustandsdiagramm_NotHalt.png}
-	\caption[Zustandsverhalten der Not-Halt-Funktion]{Zustandsverhalten der Not-Halt-Funktion (safety\_stop)}
-	\label{fig:zustandsdiagramm_nothalt}
+    \centering
+    \includegraphics[width=\textwidth]{images/Zustandsdiagramm_NotHalt.png}
+    \caption[Zustandsverhalten der Not-Halt-Funktion]{Zustandsverhalten der Not-Halt-Funktion (safety\_stop)}
+    \label{fig:zustandsdiagramm_nothalt}
 \end{figure}
 \\
 Ein wesentliches Entwurfsdetail betrifft das Zeitverhalten. In der ersten Fassung wurde der Stoppbefehl erst mit dem nächsten eintreffenden Nutzerbefehl wirksam. Die Reaktionszeit hing damit von der Sendefrequenz der App ab. In der überarbeiteten Fassung publiziert der Knoten den Stoppbefehl direkt aus der Verarbeitungsroutine des Laserscans, also mit der Scanrate des Sensors von etwa 5~Hz und unabhängig von Nutzereingaben. Der Lenkwinkel bleibt dabei erhalten und Rückwärtsfahrt bleibt zulässig, sodass das Fahrzeug aus der Gefahrensituation herausmanövriert werden kann. Die Funktion ist damit fehlersicher ausgelegt, ohne den Bediener vollständig zu entmündigen.
@@ -66,41 +66,41 @@ Unter Laufdaten werden hier sämtliche während des Betriebs und der Testläufe 
 \\
 Die neun im Projekt vorliegenden Scan-Aufzeichnungen wurden vollständig statistisch ausgewertet. Tabelle~\ref{tab:scan_kennwerte} fasst die Kennwerte zusammen. Aus dieser Auswertung wurden zwei Konsequenzen für die Implementierung abgeleitet: Erstens müssen nicht-finite Werte in jeder Verarbeitungsstufe als regulärer Fall behandelt werden, was in der Sektorauswertung der Sicherheitsfunktion durch explizite Filterung umgesetzt ist. Zweitens bestätigte die Stabilität der Kennwerte über alle Aufzeichnungen die grundsätzliche Eignung des Sensors für die Hinderniserkennung im vorgesehenen Einsatzbereich.
 \begin{table}[h!]
-\centering
-\small
-\begin{tabular}{p{6.2cm} p{8.2cm}}
-\toprule
-\textbf{Kennwert} & \textbf{Wert über alle neun Aufzeichnungen} \\
-\midrule
-Messpunkte je Scan & 1147 \\
-Winkelabdeckung & Vollkreis, etwa $-\pi$ bis $+\pi$ \\
-Winkelauflösung & ca. 0,00548~rad (etwa 0,314~Grad) \\
-Distanzbereich & ca. 0,47~m bis 10,4~m \\
-Nicht-finite Werte je Scan & 268 bis 278 (Messausfälle, außer Reichweite) \\
-Scanrate des Sensors & ca. 5,5 Umdrehungen pro Sekunde \\
-\bottomrule
-\end{tabular}
-\caption{Statistische Kennwerte der aufgezeichneten LiDAR-Scans}
-\label{tab:scan_kennwerte}
+    \centering
+    \small
+    \begin{tabular}{p{6.2cm} p{8.2cm}}
+        \toprule
+        \textbf{Kennwert}          & \textbf{Wert über alle neun Aufzeichnungen}  \\
+        \midrule
+        Messpunkte je Scan         & 1147                                         \\
+        Winkelabdeckung            & Vollkreis, etwa $-\pi$ bis $+\pi$            \\
+        Winkelauflösung            & ca. 0,00548~rad (etwa 0,314~Grad)            \\
+        Distanzbereich             & ca. 0,47~m bis 10,4~m                        \\
+        Nicht-finite Werte je Scan & 268 bis 278 (Messausfälle, außer Reichweite) \\
+        Scanrate des Sensors       & ca. 5,5 Umdrehungen pro Sekunde              \\
+        \bottomrule
+    \end{tabular}
+    \caption{Statistische Kennwerte der aufgezeichneten LiDAR-Scans}
+    \label{tab:scan_kennwerte}
 \end{table}
 \\
 Für die Auswertbarkeit der Laufdaten im Fahrbetrieb wurde ein abgestuftes Protokollierungskonzept umgesetzt. Die Vergabe der Log-Ebenen richtet sich nach dem diagnostischen Wert der Information. Tabelle~\ref{tab:log_ebenen} zeigt die Zuordnung. Auf diese Weise bleiben die Logs eines Testlaufs les- und auswertbar, ohne dass relevante Ereignisse im Rauschen der Bewegungsdaten untergehen.
 \begin{table}[h!]
-\centering
-\small
-\begin{tabular}{p{5.4cm} p{2.0cm} p{6.8cm}}
-\toprule
-\textbf{Ereignis} & \textbf{Ebene} & \textbf{Begründung} \\
-\midrule
-Einzelne Bewegungskommandos (Fahren, Lenken) & DEBUG & Hochfrequent, im Normalbetrieb ohne Erkenntnisgewinn \\
-Verbindungsaufbau des \gls{lidar} (Geräteinfo, Gesundheitsstatus) & INFO & Dokumentiert den Systemzustand je Testlauf \\
-Zeitüberschreitungen des Ultraschallsensors & WARN & Sicherheitsrelevant, deutet auf Hardware- oder Verdrahtungsprobleme hin \\
-Hinderniserkennung der Not-Halt-Funktion (mit Distanz) & WARN & Sicherheitsrelevantes Ereignis, muss im Log sofort auffindbar sein \\
-Puffer-Bereinigungen mit Byte-Anzahl je Protokollpunkt & DEBUG & Diagnosedaten für die Fehlersuche am seriellen Protokoll \\
-\bottomrule
-\end{tabular}
-\caption{Abgestuftes Protokollierungskonzept der Knoten}
-\label{tab:log_ebenen}
+    \centering
+    \small
+    \begin{tabular}{p{5.4cm} p{2.0cm} p{6.8cm}}
+        \toprule
+        \textbf{Ereignis}                                                 & \textbf{Ebene} & \textbf{Begründung}                                                     \\
+        \midrule
+        Einzelne Bewegungskommandos (Fahren, Lenken)                      & DEBUG          & Hochfrequent, im Normalbetrieb ohne Erkenntnisgewinn                    \\
+        Verbindungsaufbau des \gls{lidar} (Geräteinfo, Gesundheitsstatus) & INFO           & Dokumentiert den Systemzustand je Testlauf                              \\
+        Zeitüberschreitungen des Ultraschallsensors                       & WARN           & Sicherheitsrelevant, deutet auf Hardware- oder Verdrahtungsprobleme hin \\
+        Hinderniserkennung der Not-Halt-Funktion (mit Distanz)            & WARN           & Sicherheitsrelevantes Ereignis, muss im Log sofort auffindbar sein      \\
+        Puffer-Bereinigungen mit Byte-Anzahl je Protokollpunkt            & DEBUG          & Diagnosedaten für die Fehlersuche am seriellen Protokoll                \\
+        \bottomrule
+    \end{tabular}
+    \caption{Abgestuftes Protokollierungskonzept der Knoten}
+    \label{tab:log_ebenen}
 \end{table}
 \\
 Darüber hinaus war die logbasierte Diagnose das zentrale Hilfsmittel bei der Inbetriebnahme des \gls{lidar}-Sensors. Der Treiberknoten protokolliert an jedem Schritt des Verbindungsaufbaus definierte Kenngrößen: die Anzahl der aus dem Empfangspuffer entfernten Bytes an jedem Bereinigungspunkt, die Geräteinformationen zu Modell, Firmware und Hardware sowie den Ergebniszustand der Gesundheitsabfrage des Sensors. Erst die systematische Auswertung dieser Laufdaten über mehrere Testläufe hinweg machte die Ursache der anfänglichen Verbindungsabbrüche identifizierbar.
@@ -117,7 +117,7 @@ Zur Verbesserung der Hinderniserkennung können mehrere Maßnahmen umgesetzt wer
 \\
 Die Hinderniserkennung basiert auf der Auswertung der \gls{lidar}-Messungen im vorderen Sichtbereich des Fahrzeugs. Da für das Fahrzeug in erster Linie das unmittelbar bevorstehende Hindernis relevant ist, wird aus allen gültigen Messpunkten der nächstgelegene ausgewählt. Dieser stellt das größte Kollisionsrisiko dar und bildet daher die Grundlage für die Ausweichplanung.
 \\
-Zusätzlich werden ungültige \gls{lidar}-Messwerte verworfen. Hierzu zählen insbesondere unendliche oder außerhalb des gültigen Messbereichs liegende Werte. Erst nach dieser Vorverarbeitung werden die verbleibenden Messpunkte zur Hinderniserkennung verwendet. Aus allen gültigen Messpunkten innerhalb des definierten Sichtfeldes und der maximalen Erkennungsdistanz wird anschließend der nächstgelegene Messpunkt als Hindernis ausgewählt. Die Kombination aus Sichtfeldbegrenzung, Distanzfilterung und der Validierung der Messwerte bildet somit die Grundlage der implementierten Hinderniserkennung. 
+Zusätzlich werden ungültige \gls{lidar}-Messwerte verworfen. Hierzu zählen insbesondere unendliche oder außerhalb des gültigen Messbereichs liegende Werte. Erst nach dieser Vorverarbeitung werden die verbleibenden Messpunkte zur Hinderniserkennung verwendet. Aus allen gültigen Messpunkten innerhalb des definierten Sichtfeldes und der maximalen Erkennungsdistanz wird anschließend der nächstgelegene Messpunkt als Hindernis ausgewählt. Die Kombination aus Sichtfeldbegrenzung, Distanzfilterung und der Validierung der Messwerte bildet somit die Grundlage der implementierten Hinderniserkennung.
 \\
 Die aus der Hinderniserkennung ermittelte Position des nächstgelegenen Hindernisses wird anschließend an den Ausweichalgorithmus übergeben, welcher daraus einen kollisionsfreien Fahrpfad berechnet.
 
@@ -136,15 +136,15 @@ Damit bildet die aktuelle Implementierung die Grundlage für eine kontinuierlich
 \\
 Der vollständige Ablauf der implementierten Hindernisvermeidung ist in Abbildung \ref{fig:Zustandsdiagramm} dargestellt.
 \begin{figure}[h!]
-	\centering
-	\includegraphics[scale=0.43]{images/Ablauf_Hindernisvermeidung.png}
-	\caption[Zustandsdiagramm: Ausweichen]{Zustandsdiagramm: Ausweichen}
-	\label{fig:Zustandsdiagramm}
+    \centering
+    \includegraphics[scale=0.43]{images/Ablauf_Hindernisvermeidung.png}
+    \caption[Zustandsdiagramm: Ausweichen]{Zustandsdiagramm: Ausweichen}
+    \label{fig:Zustandsdiagramm}
 \end{figure}\newpage
 
 \subsection{Optimierung der Spurplanung}
 Während der ersten Implementierung wurde die Ausweichspur nach jedem eingehenden \gls{lidar}-Scan vollständig neu berechnet. Da sich die gemessenen Hindernispositionen durch Messrauschen geringfügig ändern, entstanden kontinuierlich unterschiedliche Spuren.
-Dieses permanente Neuplanen führte dazu, dass sich der berechnete Lenkwinkel ständig änderte. 
+Dieses permanente Neuplanen führte dazu, dass sich der berechnete Lenkwinkel ständig änderte.
 \\
 Zur Reduzierung unnötiger Neuplanungen wird die berechnete Ausweichspur im Controller als aktive Spur gespeichert. Solange keine der definierten Neuplanungsbedingungen erfüllt ist, wird dieser Pfad weiterverwendet. Dabei werden seine Längskoordinaten in jedem Berechnungszyklus entsprechend der angenommenen Fahrzeugbewegung verschoben, sodass der Fortschritt entlang der Spur simuliert wird.
 \\
@@ -152,7 +152,7 @@ Eine erneute Berechnung erfolgt, wenn sich die gerundeten Hindernisdaten gegenü
 \\
 In der aktuellen Implementierung wird durch die \gls{lidar}-Auswertung jedoch ausschließlich der nächstgelegene gültige Messpunkt als Hindernis an den Controller übergeben. Die Erkennung mehrerer gleichzeitig vorhandener Hindernisse und damit die explizite Reaktion auf ein zusätzlich auftretendes Objekt ist derzeit nicht umgesetzt.
 \\
-Zusätzlich wird der berechnete Lenkwinkel mittels exponentieller Glättung gefiltert. Hierbei wird der aktuelle Lenkwinkel nicht vollständig übernommen, sondern mit dem zuvor berechneten Wert kombiniert. Für den verwendeten Glättungsfaktor α = 0,7 ergibt sich ein Tiefpassverhalten, das schnelle Änderungen unterdrückt und kleine Schwankungen der \gls{lidar}-Messung ausgleicht. Dadurch entstehen weichere Lenkbewegungen und ein deutlich ruhigeres Fahrverhalten. Die aktuelle Implementierung plant nur bei relevanten Änderungen der Hindernissituation neu und glättet den Lenkwinkel mittels exponentieller Mittelung.
+Zusätzlich wird der berechnete Lenkwinkel mittels exponentieller Glättung gefiltert. Hierbei wird der aktuelle Lenkwinkel nicht vollständig übernommen, sondern mit dem zuvor berechneten Wert kombiniert. Für den verwendeten Glättungsfaktor $\alpha = 0,7$ ergibt sich ein Tiefpassverhalten, das schnelle Änderungen unterdrückt und kleine Schwankungen der \gls{lidar}-Messung ausgleicht. Dadurch entstehen weichere Lenkbewegungen und ein deutlich ruhigeres Fahrverhalten. Die aktuelle Implementierung plant nur bei relevanten Änderungen der Hindernissituation neu und glättet den Lenkwinkel mittels exponentieller Mittelung.
 
 \subsection{Priorisierung der Fahrbefehle}
 Während des Betriebs sendet die Smartphone-Anwendung kontinuierlich Fahrbefehle an den Fahrzeugcontroller. Gleichzeitig erzeugt die Hindernisvermeidung eigene Steuerbefehle, sobald ein Hindernis erkannt wird. Ohne zusätzliche Priorisierung würden beide Komponenten gleichzeitig Steuerbefehle senden.
@@ -163,8 +163,8 @@ Zur Lösung dieses Problems besitzt der Befehl avoid innerhalb des Fahrzeugcontr
 \\
 Abbildung \ref{fig:Klassendiagramm} zeigt abschließend die wesentlichen Klassen sowie deren Schnittstellen innerhalb der implementierten Hindernisvermeidung.
 \begin{figure}[h!]
-	\centering
-	\includegraphics[scale=0.37]{images/Klassendiagramm_ausweichen.png}
-	\caption[Klassendiagramm: Ausweichen]{Klassendiagramm: Ausweichen} 
-	\label{fig:Klassendiagramm}
+    \centering
+    \includegraphics[scale=0.37]{images/Klassendiagramm_ausweichen.png}
+    \caption[Klassendiagramm: Ausweichen]{Klassendiagramm: Ausweichen}
+    \label{fig:Klassendiagramm}
 \end{figure}\newpage

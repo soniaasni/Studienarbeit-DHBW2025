@@ -1,5 +1,24 @@
 \section{Ergebnisse}
 \label{sec:ergebnisse}
+Zur Evaluation des entwickelten Systems wurden die in Kapitel 5 definierten Testszenarien jeweils zehnmal durchgeführt. Bewertet wurden die Erfolgsquoten der Hinderniserkennung und des Ausweichmanövers.
+
+\begin{table}[h!]
+    \centering
+    \small
+    \begin{tabular}{lccc}
+        \toprule
+        \textbf{Kennzahl}               & \textbf{Szenario A} & \textbf{Szenario B} & \textbf{Szenario C} \\
+        \midrule
+        Erfolgsquote Hinderniserkennung & 100\,\%             & 100\,\%             & 95\,\%              \\
+        Erfolgsquote Ausweichmanöver    & 100\,\%             & 90\,\%              & 80\,\%              \\
+        \bottomrule
+    \end{tabular}
+    \caption{Evaluation der Hinderniserkennung und Ausweichfunktion}
+    \label{tab:evaluation}
+\end{table}
+
+Die Hinderniserkennung arbeitete in allen Testszenarien zuverlässig. Lediglich bei zwei aufeinanderfolgenden Hindernissen kam es in einem Versuch zu einer unvollständigen Erfassung der Umgebung, wodurch die Erkennungsrate auf 95\,\% sank. Die höchste Erfolgsquote beim Ausweichen wurde im Szenario mit einem zentral auf der Fahrbahn platzierten Hindernis erreicht. Bei komplexeren Hindernissituationen nahm die Erfolgsquote erwartungsgemäß ab, da die aktuelle Implementierung stets nur das nächstgelegene Hindernis in die Spurplanung einbezieht.
+\subsection{Qualitative Bewertung}
 Im Rahmen dieser Arbeit wurde ein erster funktionsfähiger Ansatz zum autonome Ausweichen von Hindernissen entwickelt und erfolgreich in das Fahrzeug integriert. Das System ist in der Lage, die Messdaten des \gls{lidar}-Sensors auszuwerten, Hindernisse im vorderen Sichtbereich zu erkennen und daraus automatisch geeignete Fahrbefehle abzuleiten.
 \\
 Die implementierte Hinderniserkennung berücksichtigt ausschließlich gültige Messwerte innerhalb eines definierten Sichtfeldes und eines maximalen Erkennungsabstands. Aus allen erkannten Messpunkten wird das nächstgelegene Hindernis ausgewählt und als Grundlage für die Fahrwegplanung verwendet. Dadurch werden viele fehlerhafte Messungen und für die Fahrtrichtung irrelevante Objekte bereits im Vorfeld ausgefiltert.
@@ -24,7 +43,3 @@ Zudem traten vereinzelt Probleme mit dem \gls{lidar}-Sensor auf. In einigen Fäl
 Die aktuelle Hinderniserkennung betrachtet jeweils den nächstgelegenen \gls{lidar}-Messpunkt als einzelnes Hindernis. Für eine robustere Objekterkennung wäre eine Clusterung benachbarter Messpunkte sinnvoll. Dadurch könnten zusammenhängende Hindernisse als vollständige Objekte erkannt sowie deren Ausdehnung bestimmt werden. Insbesondere die geschätzte Hindernisbreite könnte anschließend direkt in die Berechnung der Gaußkurve einfließen und so eine realistischere Ausweichbewegung ermöglichen.
 \\
 Darüber hinaus besteht weiterer Optimierungsbedarf bei der Parametrisierung der Fahrzeugregelung. Der optimale Sicherheitsabstand sowie die benötigten Lenkwinkel sollten optimal eingestellt werden. Aufgrund des vergleichsweise kleinen maximalen Lenkwinkels und der langen Bremswege des Fahrzeugs muss eine Hinderniserkennung bereits in größerer Entfernung erfolgen. Gleichzeitig erfordern diese Fahrzeugeigenschaften großräumige Ausweichspuren, welche in engen Umgebungen wiederum das Risiko neuer Kollisionen erhöhen können. Eine adaptive Anpassung des Sicherheitsabstands und der Spurparameter an die jeweilige Fahrsituation stellt daher einen vielversprechenden Ansatz für zukünftige Entwicklungen dar.
-
-
-\subsection{Positives}
-\label{sec:positives}
